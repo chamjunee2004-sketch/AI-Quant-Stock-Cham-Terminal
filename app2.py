@@ -11,7 +11,7 @@ from datetime import timedelta
 # ==========================================
 # 1. 全局配置与多语言引擎 (i18n)
 # ==========================================
-st.set_page_config(page_title="Cham AI Quant Terminal v3.7", layout="wide", page_icon="🌌")
+st.set_page_config(page_title="AI Quant Terminal v3.7", layout="wide", page_icon="🌌")
 
 # 侧边栏：语言切换器
 lang_choice = st.sidebar.radio("🌐 Language / 语言", ["中文", "English"], horizontal=True)
@@ -107,8 +107,8 @@ def fetch_global_data(symbols_list):
 # ==========================================
 # 4. 侧边栏导航
 # ==========================================
-st.sidebar.title(_t("🌌 AI 量化中枢 v3.7", "🌌 AI Quant Terminal v3.7"))
-st.sidebar.markdown("### 👨‍💼 Manager: Cham")
+st.sidebar.title(_t("🌌 Cham AI 量化中枢 v3.7", "🌌 Cham AI Quant Terminal v3.7"))
+st.sidebar.markdown("### 👨‍💼 Manager: Cham Jun Ee")
 st.sidebar.markdown("---")
 
 market_choice = st.sidebar.selectbox(_t("🛰️ 切换全球监控频道", "🛰️ Switch Global Channel"), list(MARKET_PRESETS.keys()))
