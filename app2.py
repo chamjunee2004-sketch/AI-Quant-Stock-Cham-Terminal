@@ -24,6 +24,10 @@ _t = lambda cn, en: cn if is_cn else en
 def apply_cyber_theme():
     st.markdown("""
     <style>
+    /* 强制主屏幕和全局字体变成赛博暗黑风格 */
+    .stApp { background-color: #0B0F19; color: #E2E8F0; }
+    [data-testid="stHeader"] { background-color: transparent; }
+    
     #MainMenu {visibility: hidden;} footer {visibility: hidden;} header {visibility: hidden;}
     .block-container {padding-top: 1.5rem; max-width: 96%;}
     div[data-testid="stMetricValue"] { font-size: 2.2rem; font-weight: 800; color: #00D2FF; text-shadow: 0px 0px 15px rgba(0, 210, 255, 0.5); }
