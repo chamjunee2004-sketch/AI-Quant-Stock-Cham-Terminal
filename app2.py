@@ -553,27 +553,29 @@ elif page == P6:
         st.session_state.messages.append({"role": "assistant", "content": response})
 
 # ==========================================
-# 页面 7：AI 预测与止盈引擎
+# 页面 7：AI 预测与止盈引擎 (带仓位管理与可视化)
 # ==========================================
 elif page == P7:
     st.title(_t("🎯 AI 预测与止盈锚定引擎", "🎯 AI Target & Profit Engine"))
     
     col_search, col_space = st.columns([1, 2])
     with col_search:
-        target_ticker = st.text_input(_t("输入预测标的 (如: AAPL, 1155.KL)", "Enter Ticker (e.g. AAPL, 1155.KL)"), "AAPL")
+        target_ticker = st.text_input(_t("输入预测标的 (如: AAPL, 1155.KL)", "Enter Ticker (e.g. AAPL, 1155.KL)"), "AAPL").upper()
         
     if st.button(_t("⚡ 生成 AI 交易计划", "⚡ Generate AI Trading Plan")):
-        with st.spinner(_t("🧠 AI 正在汇算全球投行数据与最新情报...", "🧠 AI analyzing global data & intelligence...")):
+        with st.spinner(_t("🧠 AI 正在汇算全球数据与测算盈亏比...", "🧠 AI analyzing targets & risk...")):
             try:
                 t = yf.Ticker(target_ticker)
                 info = t.info
+                hist = t.history(period="6mo") # 拉取历史数据用于画图
+                
                 current_price = info.get('currentPrice', info.get('previousClose', 0))
                 target_mean = info.get('targetMeanPrice', 0)
                 target_high = info.get('targetHighPrice', 0)
                 target_low = info.get('targetLowPrice', 0)
                 rec = info.get('recommendationKey', 'none').replace('_', ' ').title()
                 
-                if current_price > 0 and target_mean > 0:
+                if current_price > 0 and target_mean > 0 and target_low > 0:
                     st.markdown("---")
                     st.subheader(_t("📊 目标价位锚定 (华尔街共识)", "📊 Target Price Anchors (Wall St. Consensus)"))
                     
@@ -589,32 +591,79 @@ elif page == P7:
                     low_pct = ((target_low - current_price) / current_price) * 100
                     c4.metric(_t("悲观支撑 (建议止损)", "Bear Case (Stop Loss)"), f"${target_low:.2f}", f"{low_pct:+.2f}%")
 
-                    # AI 诊断结论卡片
+                    # ================= 核心升级 1：可视化图表 =================
+                    if not hist.empty:
+                        fig_target = go.Figure()
+                        # 画出历史价格线
+                        fig_target.add_trace(go.Scatter(x=hist.index, y=hist['Close'], name=_t('历史价格', 'Price'), line=dict(color='#00D2FF', width=2)))
+                        # 画出当前价
+                        fig_target.add_hline(y=current_price, line_dash="dot", line_color="#E2E8F0", annotation_text=_t("当前价", "Current"), annotation_position="bottom right")
+                        # 画出三条目标线
+                        fig_target.add_hline(y=target_mean, line_dash="dash", line_color="#34D399", annotation_text=_t("建议止盈", "Take Profit"), annotation_position="top left")
+                        fig_target.add_hline(y=target_high, line_dash="dash", line_color="#FBBF24", annotation_text=_t("极度乐观", "Bull Target"), annotation_position="top left")
+                        fig_target.add_hline(y=target_low, line_dash="dash", line_color="#FF4B4B", annotation_text=_t("建议止损", "Stop Loss"), annotation_position="bottom left")
+                        
+                        fig_target.update_layout(title=_t("🎯 价格运行空间映射", "🎯 Price Action & Targets Visualization"), template='plotly_dark', paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', height=400, margin=dict(t=40, b=0, l=0, r=0))
+                        st.plotly_chart(fig_target, use_container_width=True)
+
                     st.markdown("###")
-                    st.info(_t(f"**🤖 AI 综合诊断:** 华尔街综合评级为 **{rec}**。建议在价格接近 **${target_mean:.2f}** 时开始分批止盈，若跌破 **${target_low:.2f}** 需警惕破位风险。", 
-                               f"**🤖 AI Diagnosis:** Wall Street consensus is **{rec}**. Consider scaling out (Take Profit) near **${target_mean:.2f}**. Watch for breakdown risks below **${target_low:.2f}**."))
+                    
+                    # ================= 核心升级 2：智能仓位计算器 =================
+                    st.subheader(_t("⚖️ 智能仓位与风险管理", "⚖️ Position Sizing & Risk Management"))
+                    
+                    # 只有当前价格大于止损价格时才能做多，否则逻辑不成立
+                    if current_price > target_low:
+                        risk_per_share = current_price - target_low
+                        reward_per_share = target_mean - current_price
+                        rr_ratio = reward_per_share / risk_per_share if risk_per_share > 0 else 0
+                        
+                        st.info(_t(f"**🤖 AI 综合诊断:** 华尔街综合评级为 **{rec}**。当前潜在盈亏比 (Reward/Risk) 为 **{rr_ratio:.2f} : 1**。 (注: 盈亏比大于 2.0 通常被认为是绝佳交易机会)。", 
+                                   f"**🤖 AI Diagnosis:** Consensus is **{rec}**. Current Reward/Risk Ratio is **{rr_ratio:.2f} : 1**. (Note: R/R > 2.0 is generally considered excellent)."))
+                        
+                        col_calc1, col_calc2, col_calc3 = st.columns(3)
+                        with col_calc1:
+                            total_cap = st.number_input(_t("输入总本金 ($)", "Total Capital ($)"), min_value=100, max_value=10000000, value=10000, step=1000)
+                        with col_calc2:
+                            risk_pct = st.slider(_t("单笔愿意亏损最大比例 (%)", "Max Risk per Trade (%)"), 0.5, 5.0, 2.0, 0.5)
+                        
+                        max_loss_dollar = total_cap * (risk_pct / 100)
+                        shares_to_buy = int(max_loss_dollar / risk_per_share)
+                        position_size = shares_to_buy * current_price
+                        position_pct = (position_size / total_cap) * 100
+                        
+                        with col_calc3:
+                            st.markdown("####") # 占位对齐
+                            if st.button(_t("🧮 计算最优建仓量", "🧮 Calculate Ideal Position")):
+                                st.session_state.show_calc = True
+                        
+                        # 显示计算结果卡片
+                        if st.session_state.get('show_calc', False) or 'show_calc' not in st.session_state:
+                            calc_html = f"""
+                            <div style="background-color: #151A28; padding: 20px; border-radius: 8px; border: 1px solid #34D399; margin-top: 15px;">
+                                <h4 style="color: #34D399; margin-bottom: 10px;">🛡️ AI 建仓指令 (Action Plan)</h4>
+                                <ul style="color: #E2E8F0; font-size: 16px; line-height: 1.8;">
+                                    <li>如果触及止损价，你最多只会亏损: <strong style="color: #FF4B4B;">${max_loss_dollar:.2f}</strong> (总本金的 {risk_pct}%)</li>
+                                    <li>建议购买数量: <strong style="color: #00D2FF;">{shares_to_buy} 股</strong></li>
+                                    <li>所需动用资金: <strong style="color: #FBBF24;">${position_size:.2f}</strong> (占总本金的 {position_pct:.1f}%)</li>
+                                </ul>
+                            </div>
+                            """
+                            st.markdown(calc_html, unsafe_allow_html=True)
+                    else:
+                        st.warning(_t("⚠️ 当前价格已跌破华尔街悲观支撑位，盈亏比模型失效，强烈建议观望。", "⚠️ Current price is below the Stop Loss (Bear Case) target. R/R model invalid. Wait and see."))
 
                     st.markdown("---")
-                    st.subheader(_t("📰 核心逻辑与催化剂档案 (实时消息)", "📰 Core Logic & Catalyst Archives"))
-                    
+                    st.subheader(_t("📰 核心逻辑与催化剂档案", "📰 Core Logic & Catalyst Archives"))
                     news = t.news
                     if news:
-                        for item in news[:5]: # 只显示最新5条
+                        for item in news[:4]: 
                             title = item.get('title', 'No Title')
                             publisher = item.get('publisher', 'Unknown')
                             link = item.get('link', '#')
-                            
-                            st.markdown(f"""
-                            <div style="background-color: #151A28; padding: 15px; border-radius: 8px; border-left: 4px solid #00D2FF; margin-bottom: 10px;">
-                                <h5 style="margin-bottom: 5px; color: #E2E8F0;">{title}</h5>
-                                <p style="font-size: 12px; color: #8B949E; margin-bottom: 0px;">来源 (Source): {publisher} | <a href="{link}" target="_blank" style="color: #34D399;">阅读原始档案 (Read Archive)</a></p>
-                            </div>
-                            """, unsafe_allow_html=True)
+                            st.markdown(f"""<div style="background-color: #151A28; padding: 15px; border-radius: 8px; border-left: 4px solid #00D2FF; margin-bottom: 10px;"><h5 style="margin-bottom: 5px; color: #E2E8F0;">{title}</h5><p style="font-size: 12px; color: #8B949E; margin-bottom: 0px;">Source: {publisher} | <a href="{link}" target="_blank" style="color: #34D399;">阅读原始档案 (Read Archive)</a></p></div>""", unsafe_allow_html=True)
                     else:
-                        st.warning(_t("未找到近期的催化剂消息档案。", "No recent catalyst archives found."))
+                        st.warning(_t("未找到近期的消息档案。", "No recent archives found."))
                 else:
-                    st.error(_t("数据不足：该标的缺乏华尔街分析师的目标价覆盖。", "Insufficient Data: Lack of analyst price targets for this ticker."))
-                    
+                    st.error(_t("数据不足：缺乏分析师目标价覆盖。", "Insufficient Data: No analyst price targets."))
             except Exception as e:
-                st.error(_t(f"引擎提取失败: {e}", f"Engine Extraction Failed: {e}"))
-                            
+                st.error(_t(f"引擎提取失败: {e}", f"Engine Failed: {e}"))
