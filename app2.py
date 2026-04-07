@@ -123,8 +123,9 @@ P3 = _t("3. 深度财务解析", "3. Deep Financials")
 P4 = _t("4. 策略回测引擎", "4. Backtest Engine")
 P5 = _t("5. 全球情绪雷达", "5. Global Sentiment Radar")
 P6 = _t("6. AI 智能助手", "6. AI Assistant")
+P7 = _t("7. AI 预测与止盈引擎", "7. AI Target & Catalyst Engine")
 
-page = st.sidebar.radio(_t("系统链路", "System Links"), [P1, P2, P3, P4, P5, P6])
+page = st.sidebar.radio(_t("系统链路", "System Links"), [P1, P2, P3, P4, P5, P6, P7])
 
 if st.sidebar.button(_t("⚡ 强制同步全球数据", "⚡ Sync Global Data"), use_container_width=True):
     with st.spinner(_t('📡 正在通过卫星链路抓取数据...', '📡 Fetching data via satellite link...')):
@@ -550,3 +551,70 @@ elif page == P6:
                           f"**[AI Processing Complete]**\nCommand received: '{prompt}'. Advise cross-referencing with Global Sentiment Radar on Page 5.")
             st.markdown(response)
         st.session_state.messages.append({"role": "assistant", "content": response})
+
+# ==========================================
+# 页面 7：AI 预测与止盈引擎
+# ==========================================
+elif page == P7:
+    st.title(_t("🎯 AI 预测与止盈锚定引擎", "🎯 AI Target & Profit Engine"))
+    
+    col_search, col_space = st.columns([1, 2])
+    with col_search:
+        target_ticker = st.text_input(_t("输入预测标的 (如: AAPL, 1155.KL)", "Enter Ticker (e.g. AAPL, 1155.KL)"), "AAPL")
+        
+    if st.button(_t("⚡ 生成 AI 交易计划", "⚡ Generate AI Trading Plan")):
+        with st.spinner(_t("🧠 AI 正在汇算全球投行数据与最新情报...", "🧠 AI analyzing global data & intelligence...")):
+            try:
+                t = yf.Ticker(target_ticker)
+                info = t.info
+                current_price = info.get('currentPrice', info.get('previousClose', 0))
+                target_mean = info.get('targetMeanPrice', 0)
+                target_high = info.get('targetHighPrice', 0)
+                target_low = info.get('targetLowPrice', 0)
+                rec = info.get('recommendationKey', 'none').replace('_', ' ').title()
+                
+                if current_price > 0 and target_mean > 0:
+                    st.markdown("---")
+                    st.subheader(_t("📊 目标价位锚定 (华尔街共识)", "📊 Target Price Anchors (Wall St. Consensus)"))
+                    
+                    c1, c2, c3, c4 = st.columns(4)
+                    c1.metric(_t("当前价格", "Current Price"), f"${current_price:.2f}")
+                    
+                    mean_pct = ((target_mean - current_price) / current_price) * 100
+                    c2.metric(_t("合理估值 (建议止盈)", "Fair Value (Take Profit)"), f"${target_mean:.2f}", f"{mean_pct:+.2f}%")
+                    
+                    high_pct = ((target_high - current_price) / current_price) * 100
+                    c3.metric(_t("极度乐观 (终极目标)", "Bull Case (Max Target)"), f"${target_high:.2f}", f"{high_pct:+.2f}%")
+                    
+                    low_pct = ((target_low - current_price) / current_price) * 100
+                    c4.metric(_t("悲观支撑 (建议止损)", "Bear Case (Stop Loss)"), f"${target_low:.2f}", f"{low_pct:+.2f}%")
+
+                    # AI 诊断结论卡片
+                    st.markdown("###")
+                    st.info(_t(f"**🤖 AI 综合诊断:** 华尔街综合评级为 **{rec}**。建议在价格接近 **${target_mean:.2f}** 时开始分批止盈，若跌破 **${target_low:.2f}** 需警惕破位风险。", 
+                               f"**🤖 AI Diagnosis:** Wall Street consensus is **{rec}**. Consider scaling out (Take Profit) near **${target_mean:.2f}**. Watch for breakdown risks below **${target_low:.2f}**."))
+
+                    st.markdown("---")
+                    st.subheader(_t("📰 核心逻辑与催化剂档案 (实时消息)", "📰 Core Logic & Catalyst Archives"))
+                    
+                    news = t.news
+                    if news:
+                        for item in news[:5]: # 只显示最新5条
+                            title = item.get('title', 'No Title')
+                            publisher = item.get('publisher', 'Unknown')
+                            link = item.get('link', '#')
+                            
+                            st.markdown(f"""
+                            <div style="background-color: #151A28; padding: 15px; border-radius: 8px; border-left: 4px solid #00D2FF; margin-bottom: 10px;">
+                                <h5 style="margin-bottom: 5px; color: #E2E8F0;">{title}</h5>
+                                <p style="font-size: 12px; color: #8B949E; margin-bottom: 0px;">来源 (Source): {publisher} | <a href="{link}" target="_blank" style="color: #34D399;">阅读原始档案 (Read Archive)</a></p>
+                            </div>
+                            """, unsafe_allow_html=True)
+                    else:
+                        st.warning(_t("未找到近期的催化剂消息档案。", "No recent catalyst archives found."))
+                else:
+                    st.error(_t("数据不足：该标的缺乏华尔街分析师的目标价覆盖。", "Insufficient Data: Lack of analyst price targets for this ticker."))
+                    
+            except Exception as e:
+                st.error(_t(f"引擎提取失败: {e}", f"Engine Extraction Failed: {e}"))
+                            
