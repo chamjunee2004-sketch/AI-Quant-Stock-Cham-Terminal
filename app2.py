@@ -11,7 +11,7 @@ from datetime import timedelta
 # ==========================================
 # 1. 全局配置与多语言引擎 (i18n)
 # ==========================================
-st.set_page_config(page_title="AI Quant Terminal v3.7", layout="wide", page_icon="🌌")
+st.set_page_config(page_title="Cham AI Quant Terminal v3.7", layout="wide", page_icon="🌌")
 
 # 侧边栏：语言切换器
 lang_choice = st.sidebar.radio("🌐 Language / 语言", ["中文", "English"], horizontal=True)
