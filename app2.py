@@ -152,20 +152,33 @@ def _fetch_global_data_cached(symbols_list):
                 t = yf.Ticker(s)
                 info = t.info
                 
-                # 👇 1. 先在这里（拼接字典之前），把真实信号计算出来！
+                # 1. 真实共振信号计算
                 hist_data = t.history(period="3mo")
                 signal_score, signal_text = calculate_technical_signal(hist_data)
                 
-                # 👇 2. 然后把算好的数据，装进字典里
+                # 👇 === 🚀 雷达核心：主力资金天量爆破计算 === 👇
+                try:
+                    today_vol = hist_data['Volume'].iloc[-1]
+                    avg_vol_10 = hist_data['Volume'].iloc[-11:-1].mean() # 提取过去10天平均量
+                    vol_ratio = today_vol / avg_vol_10 if avg_vol_10 > 0 else 0
+                except:
+                    vol_ratio = 0
+
+                # 智能命名系统：如果有巨鲸，直接在名字前面加刺眼的高亮标签！
+                base_name = info.get('shortName', s)
+                final_name = f"🐋 [量爆 {vol_ratio:.1f}x] {base_name}" if vol_ratio >= 2.0 else base_name
+                # 👆 ========================================== 👆
+
+                # 2. 装载进数据总线
                 data.append({
                     'sym': s, 
-                    'name': info.get('shortName', s),
+                    'name': final_name, # 👈 注意！这里替换成了带有雷达标签的名字
                     'price': info.get('currentPrice', info.get('previousClose', 0)),
                     'roe': round(info.get('returnOnEquity', 0) * 100, 2) if info.get('returnOnEquity') else 0,
                     'pe': round(info.get('trailingPE', 0), 2) if info.get('trailingPE') else 0,
                     'net': round(info.get('profitMargins', 0) * 100, 2) if info.get('profitMargins') else 0,
                     'rev': round(info.get('revenueGrowth', 0) * 100, 2) if info.get('revenueGrowth') else 0,
-                    'sig': signal_text,  # 👈 3. 这里把 161 行删了，换成了刚才算出来的真实信号
+                    'sig': signal_text,  
                     'sec': info.get('sector', 'Unknown'),
                     'cap': info.get('marketCap', 0) / 100000000 if info.get('marketCap') else 0
                 })
