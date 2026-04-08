@@ -218,8 +218,9 @@ P5 = _t("5. 全球情绪雷达", "5. Global Sentiment Radar")
 P6 = _t("6. AI 智能助手", "6. AI Assistant")
 P7 = _t("7. AI 预测与止盈引擎", "7. AI Target & Catalyst Engine")
 P8 = _t("8. 定投复利引擎 (DCA)", "8. DCA Compound Engine")
+P9 = _t("9. 风险管理演习舱", "9. Risk Management Lab")
 
-page = st.sidebar.radio(_t("系统链路", "System Links"), [P1, P2, P3, P4, P5, P6, P7, P8])
+page = st.sidebar.radio(_t("系统链路", "System Links"), [P1, P2, P3, P4, P5, P6, P7, P8, P9])
 
 if st.sidebar.button(_t("⚡ 强制同步全球数据", "⚡ Sync Global Data"), use_container_width=True):
     with st.spinner(_t('📡 正在通过卫星链路抓取数据...', '📡 Fetching data via satellite link...')):
@@ -940,3 +941,82 @@ elif page == P8:
                     st.warning("⚠️ 找不到该标的的数据，请检查代码。")
             except Exception as e:
                 st.error(f"引擎推演失败: {e}")
+
+# ==========================================
+# 页面 9: 风险管理与破产模拟舱
+# ==========================================
+elif page == P9:
+    st.title(_t("🛡️ 风险管理与破产演习舱", "🛡️ Risk Management & Ruin Simulator"))
+    st.markdown(_t("在量化交易中，**防守永远比进攻更重要**。这个演习舱将通过蒙特卡洛模拟，教你直观理解胜率、盈亏比与仓位控制的「死亡三角」。",
+                   "In quant trading, defense is more important than offense. This lab uses Monte Carlo simulation to teach you the 'Death Triangle' of Win Rate, R/R Ratio, and Position Sizing."))
+
+    # === 1. 风控参数控制台 ===
+    st.markdown("###")
+    col_r1, col_r2, col_r3 = st.columns(3)
+    with col_r1:
+        win_rate = st.slider(_t("🎯 系统实际胜率 (%)", "🎯 Win Rate (%)"), 10, 90, 40, 5)
+    with col_r2:
+        rr_ratio = st.slider(_t("⚖️ 盈亏比 (Reward:Risk)", "⚖️ R:R Ratio"), 0.5, 5.0, 2.0, 0.1)
+    with col_r3:
+        risk_pct = st.slider(_t("🔥 单笔极限亏损 (%)", "🔥 Risk per Trade (%)"), 1.0, 50.0, 2.0, 0.5)
+
+    start_capital = 10000
+
+    # === 2. 蒙特卡洛推演引擎 ===
+    if st.button(_t("🎲 启动 100 次平行宇宙推演", "🎲 Run 100-Trade Simulation"), use_container_width=True):
+        with st.spinner(_t("正在生成平行宇宙的资金曲线...", "Simulating parallel universes...")):
+            # 跑 5 条不同的平行宇宙线
+            fig_risk = go.Figure()
+            colors = ['#00D2FF', '#F56565', '#48BB78', '#ECC94B', '#9F7AEA']
+            
+            ruin_count = 0
+
+            for i in range(5):
+                capital = start_capital
+                equity_curve = [capital]
+                ruined = False
+
+                for _ in range(100):
+                    if capital <= 0:
+                        equity_curve.append(0)
+                        continue
+
+                    # 掷骰子决定输赢 (基于设定的胜率)
+                    is_win = np.random.rand() < (win_rate / 100)
+                    # 动态仓位计算：每次只拿现有总资金的 X% 去冒险
+                    risk_amount = capital * (risk_pct / 100)
+
+                    if is_win:
+                        capital += risk_amount * rr_ratio
+                    else:
+                        capital -= risk_amount
+
+                    if capital <= start_capital * 0.1: # 亏损90%视为实质性破产
+                        ruined = True
+
+                    equity_curve.append(max(capital, 0))
+                
+                if ruined:
+                    ruin_count += 1
+
+                fig_risk.add_trace(go.Scatter(
+                    y=equity_curve, mode='lines', name=f"{_t('平行宇宙', 'Universe')} {i+1}",
+                    line=dict(color=colors[i], width=2, dash='dot' if ruined else 'solid')
+                ))
+
+            fig_risk.add_hline(y=start_capital, line_dash="dash", line_color="#A0AEC0", annotation_text=_t("初始本金", "Starting Capital"))
+            fig_risk.update_layout(
+                title=_t("📊 100次交易后的资金曲线演变 (5次独立模拟)", "📊 Equity Curve after 100 Trades (5 Simulations)"),
+                xaxis_title=_t("交易次数", "Number of Trades"), yaxis_title=_t("账户余额 ($)", "Account Balance ($)"),
+                template='plotly_dark', paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+                hovermode='x unified', margin=dict(t=50, b=20, l=0, r=0)
+            )
+            st.plotly_chart(fig_risk, use_container_width=True)
+
+            # === 3. AI 导师残酷点评 ===
+            if ruin_count > 0:
+                st.error(_t(f"🚨 **破产警告**：在 5 次平行宇宙测试中，你有 **{ruin_count}** 次账户濒临归零！你的单笔风险 ({risk_pct}%) 太高了，一旦遇到连败，神仙难救。请降低单笔亏损比例！", 
+                            f"🚨 **Ruin Warning**: You blew up your account in **{ruin_count}** out of 5 universes! Your risk per trade ({risk_pct}%) is too high. A losing streak will wipe you out. Lower it!"))
+            else:
+                st.success(_t(f"🛡️ **堡垒坚固**：经过测试，你的风控模型非常稳健。只要严格执行单笔 {risk_pct}% 的止损，加上 {win_rate}% 的胜率和 {rr_ratio} 的盈亏比，时间就是你最好的朋友！", 
+                              f"🛡️ **Solid Defense**: Your risk model survived all 5 universes. Stick to your {risk_pct}% stop loss, and time will be your best friend!"))
