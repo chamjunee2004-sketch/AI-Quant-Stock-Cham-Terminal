@@ -257,21 +257,21 @@ if page == P1:
             df = df[df[C_SIG].str.contains("买入|Buy", na=False)]
         elif sig_filter == sig_sell:
             df = df[~df[C_SIG].str.contains("卖出|Sell", na=False)] # 排除卖出
+            
+        st.markdown("###")
+        c1, c2, c3, c4 = st.columns(4)
+        c1.metric(_t("匹配节点", "Matched Nodes"), len(df))
+        c2.metric(_t("平均ROE", "Avg ROE"), f"{df[C_ROE].mean():.2f}%" if not df.empty else "0%")
         
-    st.markdown("###")
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric(_t("匹配节点", "Matched Nodes"), len(df))
-    c2.metric(_t("平均ROE", "Avg ROE"), f"{df[C_ROE].mean():.2f}%" if not df.empty else "0%")
-    
-    # === 修复 2：让 AI 情绪卡片学会统计文字买卖盘 ===
-    if not df.empty:
-        bull_count = df[C_SIG].str.contains("买入|偏多|Buy", na=False).sum()
-        bear_count = df[C_SIG].str.contains("卖出|偏空|Sell", na=False).sum()
-        sentiment = _t("🟢 偏多", "🟢 Bullish") if bull_count >= bear_count else _t("🔴 偏淡", "🔴 Bearish")
-    else:
-        sentiment = "⚪ 数据不足"
-        
-    c3.metric(_t("AI 情绪", "AI Sentiment"), sentiment)
+        # === AI 情绪卡片学会统计文字买卖盘 ===
+        if not df.empty:
+            bull_count = df[C_SIG].str.contains("买入|偏多|Buy", na=False).sum()
+            bear_count = df[C_SIG].str.contains("卖出|偏空|Sell", na=False).sum()
+            sentiment = _t("🟢 偏多", "🟢 Bullish") if bull_count >= bear_count else _t("🔴 偏淡", "🔴 Bearish")
+        else:
+            sentiment = "⚪ 数据不足"
+            
+        c3.metric(_t("AI 情绪", "AI Sentiment"), sentiment)
 
     with c4:
         if st.button(_t("🚀 启动异动监控扫描", "🚀 Start Anomaly Scan")):
