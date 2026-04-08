@@ -7,6 +7,7 @@ from plotly.subplots import make_subplots
 import yfinance as yf
 import time
 from datetime import timedelta
+import google.generativeai as genai
 
 # ==========================================
 # 1. 全局配置与多语言引擎 (i18n)
@@ -552,30 +553,58 @@ elif page == P5:
                 unsafe_allow_html=True)
 
 # ==========================================
-# 页面 6：AI 智能助手
+# 页面 6：AI 智能助手 (Gemini 真身注入版)
 # ==========================================
 elif page == P6:
     st.title(_t("🧠 核心算力中枢", "🧠 AI Quant Core"))
     st.caption(_t("System Online. Manager Cham, 随时准备执行指令。", "System Online. Ready for commands, Manager Cham."))
 
-    if "messages" not in st.session_state:
-        st.session_state.messages = [{"role": "assistant",
-                                      "content": _t("您好，Manager Cham。双语国际版已部署完毕。请下达指令。",
-                                                    "Greetings, Manager Cham. The international i18n engine is fully deployed. Awaiting your command.")}]
+    # 尝试从 Streamlit 保险柜读取 API Key
+    try:
+        api_key = st.secrets["GEMINI_API_KEY"]
+        genai.configure(api_key=api_key)
+        # 使用速度最快、极其聪明的 Flash 模型
+        model = genai.GenerativeModel('gemini-1.5-flash') 
+        api_ready = True
+    except:
+        api_ready = False
+        st.error(_t("⚠️ 核心未响应：请在 Streamlit Cloud 的 Secrets 中配置 `GEMINI_API_KEY` 才能唤醒我！", "⚠️ Core Offline: Please configure `GEMINI_API_KEY` in Streamlit Secrets."))
 
-    for message in st.session_state.messages:
-        with st.chat_message(message["role"]):
-            st.markdown(message["content"])
+    if api_ready:
+        # 初始化聊天历史
+        if "chat_history" not in st.session_state:
+            st.session_state.chat_history = [
+                {"role": "assistant", "content": _t("您好，Manager Cham！我是 Gemini，我的核心已成功接入您的量化终端。想让我帮您分析哪只股票，或者查阅什么宏观数据？", "Greetings, Manager Cham! I am Gemini, successfully integrated into your terminal. What shall we analyze today?")}
+            ]
 
-    if prompt := st.chat_input(_t("输入指令...", "Enter command or ticker...")):
-        st.session_state.messages.append({"role": "user", "content": prompt})
-        with st.chat_message("user"): st.markdown(prompt)
+        # 渲染历史对话
+        for message in st.session_state.chat_history:
+            with st.chat_message(message["role"]):
+                st.markdown(message["content"])
 
-        with st.chat_message("assistant"):
-            response = _t(f"**[AI 分析已就绪]**\n已收到指令「{prompt}」。建议结合第5页宏观雷达进行研判。",
-                          f"**[AI Processing Complete]**\nCommand received: '{prompt}'. Advise cross-referencing with Global Sentiment Radar on Page 5.")
-            st.markdown(response)
-        st.session_state.messages.append({"role": "assistant", "content": response})
+        # 接收用户输入
+        if prompt := st.chat_input(_t("输入指令 (例如：帮我分析一下特斯拉最近的财报)...", "Enter command...")):
+            # 显示用户消息
+            st.session_state.chat_history.append({"role": "user", "content": prompt})
+            with st.chat_message("user"):
+                st.markdown(prompt)
+
+            # 调用真正的 Gemini AI 生成回复
+            with st.chat_message("assistant"):
+                with st.spinner(_t("Gemini 核心运算中...", "Gemini Core Processing...")):
+                    try:
+                        # 将历史记录转换为 Gemini 认识的格式并提问
+                        history_for_gemini = [{'role': 'user' if msg['role'] == 'user' else 'model', 'parts': [msg['content']]} for msg in st.session_state.chat_history[:-1]]
+                        chat = model.start_chat(history=history_for_gemini)
+                        
+                        # 注入系统人设提示词
+                        system_prompt = f"你现在是 Manager Cham 的专属华尔街 AI 助理，正在他的专属量化终端里工作。请用专业、干练、带一点赛博黑客风格的语气回答问题。用户的请求是：{prompt}"
+                        
+                        response = chat.send_message(system_prompt)
+                        st.markdown(response.text)
+                        st.session_state.chat_history.append({"role": "assistant", "content": response.text})
+                    except Exception as e:
+                        st.error(_t(f"神经网络连接异常: {e}", f"Neural Network Error: {e}"))
 
 # ==========================================
 # 页面 7：AI 预测与止盈引擎 (带仓位管理与可视化)
