@@ -24,18 +24,63 @@ _t = lambda cn, en: cn if is_cn else en
 def apply_cyber_theme():
     st.markdown("""
     <style>
-    /* 强制主屏幕和全局字体变成赛博暗黑风格 */
-    .stApp { background-color: #0B0F19; color: #E2E8F0; }
+    /* ==========================================
+       1. 终极黑科技：液态流光呼吸背景 (Liquid Wave) 
+       ========================================== */
+    .stApp {
+        /* 使用多重深色调的线性渐变，拉大背景尺寸以准备移动 */
+        background: linear-gradient(-45deg, #080b12, #101827, #05080f, #111a2e);
+        background-size: 400% 400%;
+        /* 启动 15秒一个循环的平滑流动动画 */
+        animation: LiquidWave 15s ease infinite;
+        color: #E2E8F0;
+    }
+
+    /* 定义波浪流动的关键帧 */
+    @keyframes LiquidWave {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+
+    /* ==========================================
+       2. 顶部透明化与隐藏原生水印
+       ========================================== */
     [data-testid="stHeader"] { background-color: transparent; }
-    
     #MainMenu {visibility: hidden;} footer {visibility: hidden;} header {visibility: hidden;}
     .block-container {padding-top: 1.5rem; max-width: 96%;}
     div[data-testid="stMetricValue"] { font-size: 2.2rem; font-weight: 800; color: #00D2FF; text-shadow: 0px 0px 15px rgba(0, 210, 255, 0.5); }
-    [data-testid="stSidebar"] {background-color: #080B12; border-right: 1px solid #1E293B;}
-    div.stDataFrame {border: 1px solid #1E293B; border-radius: 8px;}
+    
+    /* ==========================================
+       3. 侧边栏与卡片：苹果级磨砂玻璃特效 (Glassmorphism)
+       ========================================== */
+    [data-testid="stSidebar"] {
+        /* 改为半透明背景，配合底部的流动波浪 */
+        background-color: rgba(8, 11, 18, 0.7) !important; 
+        border-right: 1px solid rgba(30, 41, 59, 0.5);
+        backdrop-filter: blur(12px); /* 磨砂玻璃毛玻璃特效 */
+    }
+    
+    div.info-card { 
+        background-color: rgba(21, 26, 40, 0.65); 
+        border: 1px solid rgba(30, 41, 59, 0.8); 
+        border-radius: 8px; padding: 15px; margin-bottom: 10px; 
+        box-shadow: 0 8px 16px rgba(0,0,0,0.4); 
+        backdrop-filter: blur(8px); /* 卡片磨砂特效 */
+    }
+    
+    .ticker-wrap { 
+        width: 100%; overflow: hidden; 
+        background-color: rgba(11, 15, 25, 0.7); 
+        border: 1px solid rgba(30, 41, 59, 0.8); 
+        border-radius: 8px; padding: 12px; margin-top: 20px; 
+        box-shadow: 0 0 15px rgba(0, 210, 255, 0.15); 
+        backdrop-filter: blur(8px); 
+    }
+    
+    /* 其他表格与走马灯基础设定 */
+    div.stDataFrame {border: 1px solid rgba(30, 41, 59, 0.8); border-radius: 8px;}
     .stChatMessage.assistant {background-color: rgba(0, 210, 255, 0.05) !important; border-left: 3px solid #00D2FF;}
-    div.info-card { background-color: #151A28; border: 1px solid #1E293B; border-radius: 8px; padding: 15px; margin-bottom: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
-    .ticker-wrap { width: 100%; overflow: hidden; background-color: #0B0F19; border: 1px solid #1E293B; border-radius: 8px; padding: 12px; margin-top: 20px; box-shadow: 0 0 10px rgba(0, 210, 255, 0.1); }
     .ticker { display: inline-block; white-space: nowrap; padding-right: 100%; box-sizing: content-box; animation: ticker 25s linear infinite; }
     @keyframes ticker { 0% { transform: translate3d(0, 0, 0); } 100% { transform: translate3d(-100%, 0, 0); } }
     </style>
