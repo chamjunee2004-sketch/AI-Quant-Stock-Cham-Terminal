@@ -280,15 +280,36 @@ if page == P1:
                 status.update(label=_t("扫描完成", "Scan Complete"), state="complete", expanded=False)
 
         st.markdown("---")
-
-        if not df.empty:
-            st.subheader(_t("🗺️ 资金流向与信号热力图", "🗺️ Fund Flow & Signal Treemap"))
-            fig_tree = px.treemap(df, path=[C_SEC, C_NAME], values=C_CAP, color=C_SIG,
-                                  color_continuous_scale=[(0, "#FF4B4B"), (0.5, "#1E293B"), (1, "#00D2FF")],
-                                  range_color=[-1, 1])
-            fig_tree.update_layout(template='plotly_dark', paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-                                   margin=dict(t=10, l=0, r=0, b=10), height=350)
-            st.plotly_chart(fig_tree, use_container_width=True)
+    
+    if not df.empty:
+        st.subheader(_t("🗺️ 资金流向与信号热力图", "🗺️ Fund Flow & Signal Treemap"))
+        
+        # === 修复颜色系统：教热力图认识咱们的新文字信号 ===
+        color_map = {
+            "💎 强烈买入": "#00D2FF",   # 赛博蓝
+            "🟢 偏多": "#34D399",      # 荧光绿
+            "⚪ 震荡观望": "#1E293B",   # 暗灰
+            "⚪ 数据不足": "#1E293B",
+            "🟠 偏空": "#FBBF24",      # 警示黄
+            "🔴 强烈卖出": "#FF4B4B"   # 滴血红
+        }
+        
+        fig_tree = px.treemap(
+            df, 
+            path=[C_SEC, C_NAME], 
+            values=C_CAP, 
+            color=C_SIG,
+            color_discrete_map=color_map # 换成离散文字颜色映射！
+        )
+        
+        fig_tree.update_layout(
+            template='plotly_dark', 
+            paper_bgcolor='rgba(0,0,0,0)', 
+            plot_bgcolor='rgba(0,0,0,0)',
+            margin=dict(t=10, l=0, r=0, b=10), 
+            height=400 # 稍微调高一点，霸气一点
+        )
+        st.plotly_chart(fig_tree, use_container_width=True)
 
             # === 修复 4：表格渲染逻辑与缩进修复 ===
         if not df.empty:
