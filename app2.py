@@ -333,16 +333,9 @@ if page == P1:
             margin=dict(t=10, l=0, r=0, b=10), 
             height=400 
         )
-        st.plotly_chart(fig_tree, use_container_width=True)
+        st.plotly_chart(fig_tree, use_container_width=True, key='v4_final_map')
         
-        fig_tree.update_layout(
-            template='plotly_dark', 
-            paper_bgcolor='rgba(0,0,0,0)', 
-            plot_bgcolor='rgba(0,0,0,0)',
-            margin=dict(t=10, l=0, r=0, b=10), 
-            height=400 # 稍微调高一点，霸气一点
-        )
-        st.plotly_chart(fig_tree, use_container_width=True)
+        
 
             # === 修复 4：表格渲染逻辑与缩进修复 ===
         if not df.empty:
