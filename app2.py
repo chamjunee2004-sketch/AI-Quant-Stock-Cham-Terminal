@@ -1055,13 +1055,21 @@ elif page == P10:
                     if not news_data:
                         st.error(_t("找不到近期的新闻档案。", "No recent news found."))
                     else:
-                        # 把新闻标题和来源拼接起来
-                        news_text = "\n".join([f"- {n.get('title')} ({n.get('publisher')})" for n in news_data[:6]])
+                        # 1. 加强版新闻情报提取器 (防抓空机制)
+                        news_lines = []
+                        for n in news_data[:6]:
+                            # 兼容 yfinance 的各种新旧格式变动
+                            title = n.get('title') or n.get('content', {}).get('title') or str(n)[:50] + "..."
+                            publisher = n.get('publisher') or n.get('content', {}).get('provider', {}).get('displayName') or "Wall St"
+                            if title and title != 'None':
+                                news_lines.append(f"- {title} ({publisher})")
+                                
+                        news_text = "\n".join(news_lines)
                         
                         st.info(_t("✅ 成功拦截并解析以下头条情报：\n\n", "✅ Intercepted Headlines:\n\n") + news_text)
                         
                         with st.spinner(_t("🤖 AI 正在进行情感剥离与研报生成...", "AI is performing sentiment analysis...")):
-                            # 2. 唤醒 Gemini 引擎
+                            # 2. 唤醒 Gemini 引擎 (使用最快、最适合免费版的普通引擎)
                             genai.configure(api_key=api_key)
                             model = genai.GenerativeModel('gemini-1.5-flash')
                             
