@@ -253,115 +253,115 @@ if page == P1:
         # === 数据多维过滤引擎 ===
         df = raw_df[raw_df[C_SEC].isin(selected_sectors) & (raw_df[C_ROE] >= min_roe)]
         
-if sig_filter == sig_buy:
-            df = df[df[C_SIG].str.contains("买入|Buy", na=False)]
-elif sig_filter == sig_sell:
-            df = df[~df[C_SIG].str.contains("卖出|Sell", na=False)] 
+        if sig_filter == sig_buy:
+                    df = df[df[C_SIG].str.contains("买入|Buy", na=False)]
+        elif sig_filter == sig_sell:
+                    df = df[~df[C_SIG].str.contains("卖出|Sell", na=False)] 
+                    
+        # 👇 确保 st.markdown 和上面的 if 是左边完全垂直对齐的！
+        st.markdown("###")
+        c1, c2, c3, c4 = st.columns(4)
+        
+        c1.metric(_t("匹配节点", "Matched Nodes"), len(df))
+        c2.metric(_t("平均ROE", "Avg ROE"), f"{df[C_ROE].mean():.2f}%" if not df.empty else "0%")
+        
+        # === AI 情绪卡片 ===
+        if not df.empty:
+            bull_count = df[C_SIG].str.contains("买入|偏多|Buy", na=False).sum()
+            bear_count = df[C_SIG].str.contains("卖出|偏空|Sell", na=False).sum()
+            sentiment = _t("🟢 偏多", "🟢 Bullish") if bull_count >= bear_count else _t("🔴 偏淡", "🔴 Bearish")
+        else:
+            sentiment = "⚪ 数据不足"
             
-# 👇 确保 st.markdown 和上面的 if 是左边完全垂直对齐的！
-st.markdown("###")
-c1, c2, c3, c4 = st.columns(4)
-
-c1.metric(_t("匹配节点", "Matched Nodes"), len(df))
-c2.metric(_t("平均ROE", "Avg ROE"), f"{df[C_ROE].mean():.2f}%" if not df.empty else "0%")
-
-# === AI 情绪卡片 ===
-if not df.empty:
-    bull_count = df[C_SIG].str.contains("买入|偏多|Buy", na=False).sum()
-    bear_count = df[C_SIG].str.contains("卖出|偏空|Sell", na=False).sum()
-    sentiment = _t("🟢 偏多", "🟢 Bullish") if bull_count >= bear_count else _t("🔴 偏淡", "🔴 Bearish")
-else:
-    sentiment = "⚪ 数据不足"
-    
-c3.metric(_t("AI 情绪", "AI Sentiment"), sentiment)
-
-with c4:
-    if st.button(_t("🚀 启动异动监控扫描", "🚀 Start Anomaly Scan")):
-        with st.status(_t("🛸 扫描中...", "🛸 Scanning..."), expanded=False) as status:
-            for _, row in df.sample(min(3, len(df))).iterrows():
-                import time
-                time.sleep(0.8)
-                # === 修复 3：连扫描按钮也要认识文字！ ===
-                if "买入" in str(row[C_SIG]) or "Buy" in str(row[C_SIG]):
-                    st.toast(_t(f"🚨 异动预警: {row[C_NAME]} 评级上调为‘强烈买入’！", 
-                               f"🚨 Alert: {row[C_NAME]} upgraded to 'Strong Buy'!"), icon='💎')
-            status.update(label=_t("扫描完成", "Scan Complete"), state="complete", expanded=False)
-
-st.markdown("---")
-
-if not df.empty:
-    st.subheader(_t("🗺️ 资金流向与信号热力图", "🗺️ Fund Flow & Signal Treemap"))
-    
-    # === 修复颜色系统：教热力图认识咱们的新文字信号 ===
-    # === 1. 极简主义颜色系统：只看最强和最弱 ===
-    color_map = {
-        "💎 强烈买入": "#064E3B",   # 极深绿 (Deep Emerald)
-        "🔴 强烈卖出": "#991B1B",   # 铁血红 (Strong Red)
-        "🟢 偏多": "#1E293B",      # 暗夜灰
-        "⚪ 震荡观望": "#1E293B",
-        "⚪ 数据不足": "#1E293B",
-        "🟠 偏空": "#1E293B"       # 暗夜灰
-    }
-
-    # === 2. 🚀 最后一枚勋章：板块轮动温度计 ===
-    st.markdown("###")
-    st.subheader(_t("🌡️ 板块实时热度监控", "🌡️ Sector Rotation Heat"))
-    
-    # 统计每个板块的强烈买入比例
-    sector_stats = []
-    for sector in df[C_SEC].unique():
-        sector_df = df[df[C_SEC] == sector]
-        buy_ratio = (sector_df[C_SIG].str.contains("买入|Buy", na=False)).mean() * 100
-        sector_stats.append({"Sector": sector, "Heat": buy_ratio})
-    
-    # 按热度排序并横向显示前5名
-    heat_cols = st.columns(min(len(sector_stats), 5))
-    sorted_sectors = sorted(sector_stats, key=lambda x: x['Heat'], reverse=True)
-    
-    for i, stat in enumerate(sorted_sectors[:5]):
-        with heat_cols[i]:
-            icon = "🔥" if stat['Heat'] > 50 else "🌊" if stat['Heat'] > 20 else "❄️"
-            st.metric(f"{icon} {stat['Sector']}", f"{stat['Heat']:.1f}%")
-    
-    st.markdown("---")
-
-    # === 3. 渲染热力图 ===
-    fig_tree = px.treemap(
-        df, 
-        path=[C_SEC, C_NAME], 
-        values=C_CAP, 
-        color=C_SIG,
-        color_discrete_map=color_map 
-    )
-    
-    fig_tree.update_layout(
-        template='plotly_dark', 
-        paper_bgcolor='rgba(0,0,0,0)', 
-        plot_bgcolor='rgba(0,0,0,0)',
-        margin=dict(t=10, l=0, r=0, b=10), 
-        height=400 
-    )
-    st.plotly_chart(fig_tree, use_container_width=True, key='v4_final_map')
-    
-    
-
-        # === 修复 4：表格渲染逻辑与缩进修复 ===
-    if not df.empty:
+        c3.metric(_t("AI 情绪", "AI Sentiment"), sentiment)
+        
+        with c4:
+            if st.button(_t("🚀 启动异动监控扫描", "🚀 Start Anomaly Scan")):
+                with st.status(_t("🛸 扫描中...", "🛸 Scanning..."), expanded=False) as status:
+                    for _, row in df.sample(min(3, len(df))).iterrows():
+                        import time
+                        time.sleep(0.8)
+                        # === 修复 3：连扫描按钮也要认识文字！ ===
+                        if "买入" in str(row[C_SIG]) or "Buy" in str(row[C_SIG]):
+                            st.toast(_t(f"🚨 异动预警: {row[C_NAME]} 评级上调为‘强烈买入’！", 
+                                       f"🚨 Alert: {row[C_NAME]} upgraded to 'Strong Buy'!"), icon='💎')
+                    status.update(label=_t("扫描完成", "Scan Complete"), state="complete", expanded=False)
+        
         st.markdown("---")
-        st.subheader(_t("📑 深度扫描数据列表", "📑 Deep Scan Data List"))
-        df[C_TREND] = [np.random.randn(10).tolist() for _ in range(len(df))]
         
-        st.dataframe(df, column_config={
-            C_ROE: st.column_config.ProgressColumn(_t("ROE效率", "ROE Eff."), format="%.2f%%", min_value=0, max_value=50),
-            # 💥 注意：这里已经删除了旧的 C_SIG 数字映射，因为新引擎直接输出真实文字！
-            C_TREND: st.column_config.LineChartColumn(_t("即时波动", "Mini Trend")),
-            C_PRICE: st.column_config.NumberColumn(_t("报价", "Price"), format="$%.2f")
-        }, use_container_width=True, hide_index=True)
+        if not df.empty:
+            st.subheader(_t("🗺️ 资金流向与信号热力图", "🗺️ Fund Flow & Signal Treemap"))
+            
+            # === 修复颜色系统：教热力图认识咱们的新文字信号 ===
+            # === 1. 极简主义颜色系统：只看最强和最弱 ===
+            color_map = {
+                "💎 强烈买入": "#064E3B",   # 极深绿 (Deep Emerald)
+                "🔴 强烈卖出": "#991B1B",   # 铁血红 (Strong Red)
+                "🟢 偏多": "#1E293B",      # 暗夜灰
+                "⚪ 震荡观望": "#1E293B",
+                "⚪ 数据不足": "#1E293B",
+                "🟠 偏空": "#1E293B"       # 暗夜灰
+            }
         
-    else:
-        st.warning(_t("⚠️ 未发现符合条件的标的。", "⚠️ No matching tickers found."))
+            # === 2. 🚀 最后一枚勋章：板块轮动温度计 ===
+            st.markdown("###")
+            st.subheader(_t("🌡️ 板块实时热度监控", "🌡️ Sector Rotation Heat"))
+            
+            # 统计每个板块的强烈买入比例
+            sector_stats = []
+            for sector in df[C_SEC].unique():
+                sector_df = df[df[C_SEC] == sector]
+                buy_ratio = (sector_df[C_SIG].str.contains("买入|Buy", na=False)).mean() * 100
+                sector_stats.append({"Sector": sector, "Heat": buy_ratio})
+            
+            # 按热度排序并横向显示前5名
+            heat_cols = st.columns(min(len(sector_stats), 5))
+            sorted_sectors = sorted(sector_stats, key=lambda x: x['Heat'], reverse=True)
+            
+            for i, stat in enumerate(sorted_sectors[:5]):
+                with heat_cols[i]:
+                    icon = "🔥" if stat['Heat'] > 50 else "🌊" if stat['Heat'] > 20 else "❄️"
+                    st.metric(f"{icon} {stat['Sector']}", f"{stat['Heat']:.1f}%")
+            
+            st.markdown("---")
         
-
+            # === 3. 渲染热力图 ===
+            fig_tree = px.treemap(
+                df, 
+                path=[C_SEC, C_NAME], 
+                values=C_CAP, 
+                color=C_SIG,
+                color_discrete_map=color_map 
+            )
+            
+            fig_tree.update_layout(
+                template='plotly_dark', 
+                paper_bgcolor='rgba(0,0,0,0)', 
+                plot_bgcolor='rgba(0,0,0,0)',
+                margin=dict(t=10, l=0, r=0, b=10), 
+                height=400 
+            )
+            st.plotly_chart(fig_tree, use_container_width=True, key='v4_final_map')
+            
+            
+        
+                # === 修复 4：表格渲染逻辑与缩进修复 ===
+            if not df.empty:
+                st.markdown("---")
+                st.subheader(_t("📑 深度扫描数据列表", "📑 Deep Scan Data List"))
+                df[C_TREND] = [np.random.randn(10).tolist() for _ in range(len(df))]
+                
+                st.dataframe(df, column_config={
+                    C_ROE: st.column_config.ProgressColumn(_t("ROE效率", "ROE Eff."), format="%.2f%%", min_value=0, max_value=50),
+                    # 💥 注意：这里已经删除了旧的 C_SIG 数字映射，因为新引擎直接输出真实文字！
+                    C_TREND: st.column_config.LineChartColumn(_t("即时波动", "Mini Trend")),
+                    C_PRICE: st.column_config.NumberColumn(_t("报价", "Price"), format="$%.2f")
+                }, use_container_width=True, hide_index=True)
+                
+            else:
+                st.warning(_t("⚠️ 未发现符合条件的标的。", "⚠️ No matching tickers found."))
+                
+        
 
 # ==========================================
 # 页面 2：基本面多维扫描
