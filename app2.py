@@ -293,8 +293,7 @@ if page == P1:
         else:
             st.warning(_t("⚠️ 未发现符合条件的标的。", "⚠️ No matching tickers found."))
             
-    else:
-        st.info(_t("💡 请在侧边栏选择频道，或输入代码。", "💡 Please select a channel or input tickers in the sidebar."))
+    
 
 # ==========================================
 # 页面 2：基本面多维扫描
