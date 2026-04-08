@@ -217,8 +217,9 @@ P4 = _t("4. 策略回测引擎", "4. Backtest Engine")
 P5 = _t("5. 全球情绪雷达", "5. Global Sentiment Radar")
 P6 = _t("6. AI 智能助手", "6. AI Assistant")
 P7 = _t("7. AI 预测与止盈引擎", "7. AI Target & Catalyst Engine")
+P8 = _t("8. 定投复利引擎 (DCA)")
 
-page = st.sidebar.radio(_t("系统链路", "System Links"), [P1, P2, P3, P4, P5, P6, P7])
+page = st.sidebar.radio(_t("系统链路", "System Links"), [P1, P2, P3, P4, P5, P6, P7, P8])
 
 if st.sidebar.button(_t("⚡ 强制同步全球数据", "⚡ Sync Global Data"), use_container_width=True):
     with st.spinner(_t('📡 正在通过卫星链路抓取数据...', '📡 Fetching data via satellite link...')):
@@ -857,3 +858,85 @@ elif page == P7:
                     st.error(_t("数据不足：缺乏分析师目标价覆盖。", "Insufficient Data: No analyst price targets."))
             except Exception as e:
                 st.error(_t(f"引擎提取失败: {e}", f"Engine Failed: {e}"))
+
+# ==========================================
+# 页面 8: DCA 定投复利引擎
+# ==========================================
+elif page == P8:
+    st.title(_t("🌱 DCA 定投复利引擎", "🌱 DCA Compound Interest Engine"))
+    st.markdown(_t("无视短期波动，利用时间与纪律滚大财富雪球。适合加密货币与优质蓝筹的长线战略。", 
+                   "Ignore short-term volatility. Build wealth through time and discipline."))
+    
+    # === 1. 战术控制台 ===
+    st.markdown("###")
+    col_d1, col_d2, col_d3 = st.columns(3)
+    with col_d1:
+        dca_target = st.text_input(_t("🎯 定投目标 (如: BTC-USD, NVDA)", "🎯 Target Ticker"), "BTC-USD").upper()
+    with col_d2:
+        dca_amount = st.number_input(_t("💰 每月定投金额 ($)", "💰 Monthly Amount ($)"), min_value=10, value=500, step=100)
+    with col_d3:
+        dca_years = st.selectbox(_t("⏱️ 回测年限", "⏱️ Timeframe"), [1, 2, 3, 5, 8, 10], index=2)
+        
+    # === 2. 核心计算引擎 ===
+    if st.button(_t("🚀 启动时空回测", "🚀 Start DCA Simulation")):
+        with st.spinner(_t("正在推演历史时空与复利增长...", "Simulating historical data & compound interest...")):
+            try:
+                # 拉取历史数据
+                dca_hist = yf.Ticker(dca_target).history(period=f"{dca_years}y")
+                
+                if not dca_hist.empty:
+                    df_dca = dca_hist.copy()
+                    # 提取每个月的最后一个交易日作为定投日
+                    df_dca['YearMonth'] = df_dca.index.to_period('M')
+                    monthly_df = df_dca.groupby('YearMonth').last()
+                    
+                    # === DCA 量化公式 ===
+                    monthly_df['Shares_Bought'] = dca_amount / monthly_df['Close']
+                    monthly_df['Total_Shares'] = monthly_df['Shares_Bought'].cumsum()
+                    monthly_df['Total_Invested'] = dca_amount * (np.arange(len(monthly_df)) + 1)
+                    monthly_df['Portfolio_Value'] = monthly_df['Total_Shares'] * monthly_df['Close']
+                    
+                    # 提取最终战果
+                    total_invested = monthly_df['Total_Invested'].iloc[-1]
+                    final_value = monthly_df['Portfolio_Value'].iloc[-1]
+                    total_profit = final_value - total_invested
+                    roi = (total_profit / total_invested) * 100
+                    
+                    # === 3. 战报卡片展示 ===
+                    st.markdown("---")
+                    st.subheader(_t("🏆 终极复利战报", "🏆 Ultimate Compound Report"))
+                    
+                    m1, m2, m3 = st.columns(3)
+                    m1.metric(_t("总投入本金", "Total Invested"), f"${total_invested:,.2f}")
+                    m2.metric(_t("当前总资产", "Current Value"), f"${final_value:,.2f}", f"{total_profit:+,.2f} USD")
+                    m3.metric(_t("累计收益率 (ROI)", "Total ROI"), f"{roi:.2f}%")
+                    
+                    # === 4. 财富增长时空图 ===
+                    fig_dca = go.Figure()
+                    
+                    # 投入本金线（平稳增长）
+                    fig_dca.add_trace(go.Scatter(
+                        x=monthly_df.index.astype(str), y=monthly_df['Total_Invested'], 
+                        name=_t('累计投入本金', 'Total Invested'), 
+                        line=dict(color='#E2E8F0', width=2, dash='dash')
+                    ))
+                    
+                    # 资产市值线（随市场波动）
+                    fig_dca.add_trace(go.Scatter(
+                        x=monthly_df.index.astype(str), y=monthly_df['Portfolio_Value'], 
+                        name=_t('持仓总市值', 'Portfolio Value'), 
+                        line=dict(color='#00D2FF', width=3),
+                        fill='tonexty', fillcolor='rgba(0, 210, 255, 0.1)'
+                    ))
+                    
+                    fig_dca.update_layout(
+                        title=_t("📈 资产复利穿透曲线", "📈 Wealth Trajectory Curve"),
+                        template='plotly_dark', paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+                        hovermode='x unified', margin=dict(t=50, b=20, l=0, r=0)
+                    )
+                    st.plotly_chart(fig_dca, use_container_width=True)
+                    
+                else:
+                    st.warning("⚠️ 找不到该标的的数据，请检查代码。")
+            except Exception as e:
+                st.error(f"引擎推演失败: {e}")
