@@ -136,6 +136,7 @@ MARKET_PRESETS = {
     _t("🇲🇾 马股 KLCI 蓝筹 (马来核心)", "🇲🇾 KLCI Blue Chips (Malaysia)"): ["1155.KL", "1023.KL", "1295.KL", "5347.KL",
                                                                           "6888.KL", "1066.KL", "5183.KL"],
     _t("🇨🇳 中国核心资产", "🇨🇳 China Core Assets"): ["601857.SS", "000002.SZ", "600519.SS", "000725.SZ"],
+    _t("🪙 全球加密货币 (Crypto)", "🪙 Global Crypto Assets"): ["BTC-USD", "ETH-USD", "SOL-USD", "BNB-USD", "XRP-USD", "DOGE-USD", "ADA-USD"],
     _t("🚀 仅看我的自定义自选", "🚀 Custom Watchlist Only"): []
 }
 
