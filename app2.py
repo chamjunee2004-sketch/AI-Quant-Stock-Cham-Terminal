@@ -367,49 +367,49 @@ if not df.empty:
 # 页面 2：基本面多维扫描
 # ==========================================
 elif page == P2:
-st.title(_t("🧬 基本面多维扫描", "🧬 Multi-Dim Fundamental Scan"))
-df = fetch_global_data(final_scan_list)
-
-if not df.empty:
-    st.subheader(_t("📊 宏观指标概览", "📊 Macro Indicators Overview"))
-    col_bar, col_pie = st.columns(2)
-    with col_bar:
-        fig_pe = px.bar(df, x=C_NAME, y=C_PE, color=C_NAME, template='plotly_dark', height=350)
-        fig_pe.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', showlegend=False)
-        st.plotly_chart(fig_pe, use_container_width=True)
-    with col_pie:
-        fig_roe = px.pie(df, names=C_NAME, values=C_ROE, template='plotly_dark', height=350)
-        fig_roe.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
-        st.plotly_chart(fig_roe, use_container_width=True)
-
-    st.markdown("---")
-    st.subheader(_t("🕸️ 核心标的多维雷达画像", "🕸️ Core Assets Multi-Dim Radar"))
-    radar_df = df.head(5).copy()
-    categories = [C_ROE, C_NET, C_REV, C_PE, C_CAP]
-
-    fig_radar = go.Figure()
-    for idx, row in radar_df.iterrows():
-        values = [min(row[C_ROE] * 2, 100), min(row[C_NET] * 3, 100), min(max(row[C_REV] * 2, 0), 100),
-                  min(1000 / (row[C_PE] + 1), 100), min(row[C_CAP] / 100, 100)]
-        values.append(values[0])
-        cat_closed = categories + [categories[0]]
-        fig_radar.add_trace(
-            go.Scatterpolar(r=values, theta=cat_closed, fill='toself', name=row[C_NAME], opacity=0.6))
-
-    fig_radar.update_layout(polar=dict(radialaxis=dict(visible=False, range=[0, 100])), showlegend=True,
-                            template='plotly_dark', paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-                            height=500)
-    st.plotly_chart(fig_radar, use_container_width=True)
-
-    st.markdown("---")
-    st.subheader(_t("📋 详细财务摘要矩阵", "📋 Detailed Financial Matrix"))
-    cols = st.columns(4)
-    for idx, row in df.iterrows():
-        with cols[idx % 4]:
-            card_html = f"""<div class="info-card"><h4 style='color: #00D2FF; margin-bottom: 5px;'>{row[C_NAME]}</h4><p style='color: #8B949E; font-size: 14px; margin-bottom: 15px;'>{row[C_SYM]} | {row[C_SEC]}</p><div style='display: flex; justify-content: space-between; border-bottom: 1px solid #1E293B; padding-bottom: 5px;'><span style='color: #E2E8F0;'>ROE</span><span style='color: #34D399; font-weight: bold;'>{row[C_ROE]}%</span></div><div style='display: flex; justify-content: space-between; border-bottom: 1px solid #1E293B; padding-bottom: 5px; margin-top: 5px;'><span style='color: #E2E8F0;'>{_t("净利率", "Net Margin")}</span><span style='color: #F87171; font-weight: bold;'>{row[C_NET]}%</span></div><div style='display: flex; justify-content: space-between; padding-bottom: 5px; margin-top: 5px;'><span style='color: #E2E8F0;'>{_t("市盈率", "PE Ratio")}</span><span style='color: #FBBF24; font-weight: bold;'>{row[C_PE]}x</span></div></div>"""
-            st.markdown(card_html, unsafe_allow_html=True)
-else:
-    st.warning(_t("暂无数据。", "No Data."))
+    st.title(_t("🧬 基本面多维扫描", "🧬 Multi-Dim Fundamental Scan"))
+    df = fetch_global_data(final_scan_list)
+    
+    if not df.empty:
+        st.subheader(_t("📊 宏观指标概览", "📊 Macro Indicators Overview"))
+        col_bar, col_pie = st.columns(2)
+        with col_bar:
+            fig_pe = px.bar(df, x=C_NAME, y=C_PE, color=C_NAME, template='plotly_dark', height=350)
+            fig_pe.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', showlegend=False)
+            st.plotly_chart(fig_pe, use_container_width=True)
+        with col_pie:
+            fig_roe = px.pie(df, names=C_NAME, values=C_ROE, template='plotly_dark', height=350)
+            fig_roe.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
+            st.plotly_chart(fig_roe, use_container_width=True)
+    
+        st.markdown("---")
+        st.subheader(_t("🕸️ 核心标的多维雷达画像", "🕸️ Core Assets Multi-Dim Radar"))
+        radar_df = df.head(5).copy()
+        categories = [C_ROE, C_NET, C_REV, C_PE, C_CAP]
+    
+        fig_radar = go.Figure()
+        for idx, row in radar_df.iterrows():
+            values = [min(row[C_ROE] * 2, 100), min(row[C_NET] * 3, 100), min(max(row[C_REV] * 2, 0), 100),
+                      min(1000 / (row[C_PE] + 1), 100), min(row[C_CAP] / 100, 100)]
+            values.append(values[0])
+            cat_closed = categories + [categories[0]]
+            fig_radar.add_trace(
+                go.Scatterpolar(r=values, theta=cat_closed, fill='toself', name=row[C_NAME], opacity=0.6))
+    
+        fig_radar.update_layout(polar=dict(radialaxis=dict(visible=False, range=[0, 100])), showlegend=True,
+                                template='plotly_dark', paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+                                height=500)
+        st.plotly_chart(fig_radar, use_container_width=True)
+    
+        st.markdown("---")
+        st.subheader(_t("📋 详细财务摘要矩阵", "📋 Detailed Financial Matrix"))
+        cols = st.columns(4)
+        for idx, row in df.iterrows():
+            with cols[idx % 4]:
+                card_html = f"""<div class="info-card"><h4 style='color: #00D2FF; margin-bottom: 5px;'>{row[C_NAME]}</h4><p style='color: #8B949E; font-size: 14px; margin-bottom: 15px;'>{row[C_SYM]} | {row[C_SEC]}</p><div style='display: flex; justify-content: space-between; border-bottom: 1px solid #1E293B; padding-bottom: 5px;'><span style='color: #E2E8F0;'>ROE</span><span style='color: #34D399; font-weight: bold;'>{row[C_ROE]}%</span></div><div style='display: flex; justify-content: space-between; border-bottom: 1px solid #1E293B; padding-bottom: 5px; margin-top: 5px;'><span style='color: #E2E8F0;'>{_t("净利率", "Net Margin")}</span><span style='color: #F87171; font-weight: bold;'>{row[C_NET]}%</span></div><div style='display: flex; justify-content: space-between; padding-bottom: 5px; margin-top: 5px;'><span style='color: #E2E8F0;'>{_t("市盈率", "PE Ratio")}</span><span style='color: #FBBF24; font-weight: bold;'>{row[C_PE]}x</span></div></div>"""
+                st.markdown(card_html, unsafe_allow_html=True)
+    else:
+        st.warning(_t("暂无数据。", "No Data."))
 
 # ==========================================
 # 页面 3：深度财务解析
