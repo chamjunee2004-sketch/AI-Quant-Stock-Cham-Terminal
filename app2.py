@@ -255,39 +255,39 @@ if page == P1:
         
 if sig_filter == sig_buy:
             df = df[df[C_SIG].str.contains("买入|Buy", na=False)]
-        elif sig_filter == sig_sell:
+elif sig_filter == sig_sell:
             df = df[~df[C_SIG].str.contains("卖出|Sell", na=False)] 
             
-        # 👇 确保 st.markdown 和上面的 if 是左边完全垂直对齐的！
-        st.markdown("###")
-        c1, c2, c3, c4 = st.columns(4)
-        
-        c1.metric(_t("匹配节点", "Matched Nodes"), len(df))
-        c2.metric(_t("平均ROE", "Avg ROE"), f"{df[C_ROE].mean():.2f}%" if not df.empty else "0%")
-        
-        # === AI 情绪卡片 ===
-        if not df.empty:
-            bull_count = df[C_SIG].str.contains("买入|偏多|Buy", na=False).sum()
-            bear_count = df[C_SIG].str.contains("卖出|偏空|Sell", na=False).sum()
-            sentiment = _t("🟢 偏多", "🟢 Bullish") if bull_count >= bear_count else _t("🔴 偏淡", "🔴 Bearish")
-        else:
-            sentiment = "⚪ 数据不足"
-            
-        c3.metric(_t("AI 情绪", "AI Sentiment"), sentiment)
+# 👇 确保 st.markdown 和上面的 if 是左边完全垂直对齐的！
+st.markdown("###")
+c1, c2, c3, c4 = st.columns(4)
 
-    with c4:
-        if st.button(_t("🚀 启动异动监控扫描", "🚀 Start Anomaly Scan")):
-            with st.status(_t("🛸 扫描中...", "🛸 Scanning..."), expanded=False) as status:
-                for _, row in df.sample(min(3, len(df))).iterrows():
-                    import time
-                    time.sleep(0.8)
-                    # === 修复 3：连扫描按钮也要认识文字！ ===
-                    if "买入" in str(row[C_SIG]) or "Buy" in str(row[C_SIG]):
-                        st.toast(_t(f"🚨 异动预警: {row[C_NAME]} 评级上调为‘强烈买入’！", 
-                                   f"🚨 Alert: {row[C_NAME]} upgraded to 'Strong Buy'!"), icon='💎')
-                status.update(label=_t("扫描完成", "Scan Complete"), state="complete", expanded=False)
+c1.metric(_t("匹配节点", "Matched Nodes"), len(df))
+c2.metric(_t("平均ROE", "Avg ROE"), f"{df[C_ROE].mean():.2f}%" if not df.empty else "0%")
 
-        st.markdown("---")
+# === AI 情绪卡片 ===
+if not df.empty:
+    bull_count = df[C_SIG].str.contains("买入|偏多|Buy", na=False).sum()
+    bear_count = df[C_SIG].str.contains("卖出|偏空|Sell", na=False).sum()
+    sentiment = _t("🟢 偏多", "🟢 Bullish") if bull_count >= bear_count else _t("🔴 偏淡", "🔴 Bearish")
+else:
+    sentiment = "⚪ 数据不足"
+    
+c3.metric(_t("AI 情绪", "AI Sentiment"), sentiment)
+
+with c4:
+    if st.button(_t("🚀 启动异动监控扫描", "🚀 Start Anomaly Scan")):
+        with st.status(_t("🛸 扫描中...", "🛸 Scanning..."), expanded=False) as status:
+            for _, row in df.sample(min(3, len(df))).iterrows():
+                import time
+                time.sleep(0.8)
+                # === 修复 3：连扫描按钮也要认识文字！ ===
+                if "买入" in str(row[C_SIG]) or "Buy" in str(row[C_SIG]):
+                    st.toast(_t(f"🚨 异动预警: {row[C_NAME]} 评级上调为‘强烈买入’！", 
+                               f"🚨 Alert: {row[C_NAME]} upgraded to 'Strong Buy'!"), icon='💎')
+            status.update(label=_t("扫描完成", "Scan Complete"), state="complete", expanded=False)
+
+st.markdown("---")
     
     if not df.empty:
         st.subheader(_t("🗺️ 资金流向与信号热力图", "🗺️ Fund Flow & Signal Treemap"))
