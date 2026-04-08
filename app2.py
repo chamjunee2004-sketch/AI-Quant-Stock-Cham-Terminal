@@ -24,19 +24,19 @@ _t = lambda cn, en: cn if is_cn else en
 def apply_cyber_theme():
     st.markdown("""
     <style>
-    /* 1. 动态网格背景 (无限滑动) */
+    /* 1. 量子极光呼吸背景 */
     .stApp {
-        background-color: #050812;
+        background-color: #03050A;
         background-image: 
-            linear-gradient(rgba(0, 210, 255, 0.07) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(0, 210, 255, 0.07) 1px, transparent 1px);
-        background-size: 30px 30px;
-        animation: GridMove 10s linear infinite;
+            radial-gradient(circle at 20% 30%, rgba(0, 210, 255, 0.08), transparent 40%),
+            radial-gradient(circle at 80% 70%, rgba(255, 75, 75, 0.06), transparent 40%);
+        background-size: 200% 200%;
+        animation: NebulaBreathe 12s ease-in-out infinite alternate;
         color: #E2E8F0;
     }
-    @keyframes GridMove {
-        0% { background-position: 0px 0px; }
-        100% { background-position: 30px 30px; }
+    @keyframes NebulaBreathe {
+        0% { background-position: 0% 0%; }
+        100% { background-position: 100% 100%; }
     }
 
     /* 2. 隐藏水印与基础排版 */
@@ -47,20 +47,20 @@ def apply_cyber_theme():
     
     /* 3. 保留磨砂玻璃特效 (Glassmorphism) */
     [data-testid="stSidebar"] {
-        background-color: rgba(5, 8, 18, 0.75) !important; 
-        border-right: 1px solid rgba(0, 210, 255, 0.2);
-        backdrop-filter: blur(12px); 
+        background-color: rgba(3, 5, 10, 0.6) !important; 
+        border-right: 1px solid rgba(30, 41, 59, 0.8);
+        backdrop-filter: blur(15px); 
     }
     div.info-card { 
-        background-color: rgba(11, 15, 25, 0.6); border: 1px solid rgba(0, 210, 255, 0.2); 
-        border-radius: 8px; padding: 15px; margin-bottom: 10px; backdrop-filter: blur(8px); 
+        background-color: rgba(21, 26, 40, 0.5); border: 1px solid rgba(30, 41, 59, 0.8); 
+        border-radius: 8px; padding: 15px; margin-bottom: 10px; backdrop-filter: blur(10px); 
     }
     .ticker-wrap { 
-        width: 100%; overflow: hidden; background-color: rgba(5, 8, 18, 0.8); 
-        border: 1px solid rgba(0, 210, 255, 0.2); border-radius: 8px; padding: 12px; margin-top: 20px; 
-        backdrop-filter: blur(8px); 
+        width: 100%; overflow: hidden; background-color: rgba(3, 5, 10, 0.7); 
+        border: 1px solid rgba(30, 41, 59, 0.8); border-radius: 8px; padding: 12px; margin-top: 20px; 
+        backdrop-filter: blur(10px); 
     }
-    div.stDataFrame {border: 1px solid rgba(0, 210, 255, 0.2); border-radius: 8px;}
+    div.stDataFrame {border: 1px solid rgba(30, 41, 59, 0.8); border-radius: 8px;}
     .stChatMessage.assistant {background-color: rgba(0, 210, 255, 0.05) !important; border-left: 3px solid #00D2FF;}
     .ticker { display: inline-block; white-space: nowrap; padding-right: 100%; box-sizing: content-box; animation: ticker 25s linear infinite; }
     @keyframes ticker { 0% { transform: translate3d(0, 0, 0); } 100% { transform: translate3d(-100%, 0, 0); } }
