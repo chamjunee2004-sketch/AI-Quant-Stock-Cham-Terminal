@@ -237,20 +237,26 @@ if page == P1:
     if not raw_df.empty:
         with st.expander(_t("🔍 开启多维筛选雷达", "🔍 Open Multi-Dim Filter Radar"), expanded=True):
             f1, f2, f3 = st.columns(3)
-            with f1: selected_sectors = st.multiselect(_t("筛选板块", "Filter Sectors"), raw_df[C_SEC].unique(),
-                                                       default=raw_df[C_SEC].unique())
-            with f2: min_roe = st.slider(_t("最低 ROE (%)", "Min ROE (%)"), 0.0, 50.0, 0.0)
-
-            sig_all, sig_buy, sig_sell = _t("全部", "All"), _t("仅看买入 (1)", "Buy Only (1)"), _t("排除卖出 (0 & 1)",
-                                                                                                   "Exclude Sell (0 & 1)")
-            with f3: sig_filter = st.selectbox(_t("信号过滤", "Signal Filter"), [sig_all, sig_buy, sig_sell])
-
+            with f1: 
+                selected_sectors = st.multiselect(_t("筛选板块", "Filter Sectors"), raw_df[C_SEC].unique(), default=raw_df[C_SEC].unique())
+            with f2: 
+                min_roe = st.slider(_t("最低 ROE (%)", "Min ROE (%)"), 0.0, 50.0, 0.0)
+            
+            # === 拆解变量，彻底解决报错，并更新为 V4.0 高级文本标签 ===
+            sig_all = _t("全部", "All")
+            sig_buy = _t("仅看买入", "Buy Only")
+            sig_sell = _t("排除卖出", "Exclude Sell")
+            
+            with f3: 
+                sig_filter = st.selectbox(_t("信号过滤", "Signal Filter"), [sig_all, sig_buy, sig_sell])
+        
+        # === 数据多维过滤引擎 ===
         df = raw_df[raw_df[C_SEC].isin(selected_sectors) & (raw_df[C_ROE] >= min_roe)]
-        # === 修复 1：让筛选器学会识别文字 ===
-    if sig_filter == sig_buy:
-        df = df[df[C_SIG].str.contains("买入|Buy", na=False)]
-    elif sig_filter == sig_sell:
-        df = df[~df[C_SIG].str.contains("卖出|Sell", na=False)] # 排除包含“卖出”的行
+        
+        if sig_filter == sig_buy:
+            df = df[df[C_SIG].str.contains("买入|Buy", na=False)]
+        elif sig_filter == sig_sell:
+            df = df[~df[C_SIG].str.contains("卖出|Sell", na=False)] # 排除卖出
         
     st.markdown("###")
     c1, c2, c3, c4 = st.columns(4)
