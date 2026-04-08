@@ -253,17 +253,19 @@ if page == P1:
         # === 数据多维过滤引擎 ===
         df = raw_df[raw_df[C_SEC].isin(selected_sectors) & (raw_df[C_ROE] >= min_roe)]
         
-        if sig_filter == sig_buy:
+if sig_filter == sig_buy:
             df = df[df[C_SIG].str.contains("买入|Buy", na=False)]
         elif sig_filter == sig_sell:
-            df = df[~df[C_SIG].str.contains("卖出|Sell", na=False)] # 排除卖出
+            df = df[~df[C_SIG].str.contains("卖出|Sell", na=False)] 
             
+        # 👇 确保 st.markdown 和上面的 if 是左边完全垂直对齐的！
         st.markdown("###")
         c1, c2, c3, c4 = st.columns(4)
+        
         c1.metric(_t("匹配节点", "Matched Nodes"), len(df))
         c2.metric(_t("平均ROE", "Avg ROE"), f"{df[C_ROE].mean():.2f}%" if not df.empty else "0%")
         
-        # === AI 情绪卡片学会统计文字买卖盘 ===
+        # === AI 情绪卡片 ===
         if not df.empty:
             bull_count = df[C_SIG].str.contains("买入|偏多|Buy", na=False).sum()
             bear_count = df[C_SIG].str.contains("卖出|偏空|Sell", na=False).sum()
