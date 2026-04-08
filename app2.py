@@ -1071,7 +1071,10 @@ elif page == P10:
                         with st.spinner(_t("🤖 AI 正在进行情感剥离与研报生成...", "AI is performing sentiment analysis...")):
                             # 2. 唤醒 Gemini 引擎 (使用最快、最适合免费版的普通引擎)
                             genai.configure(api_key=api_key)
-                            model = genai.GenerativeModel('gemini-pro')
+                            
+                            # 让代码自动寻找你的 API Key 能用的模型，并选第一个
+                            valid_models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
+                            model = genai.GenerativeModel(valid_models[0])
                             
                             # 3. 注入首席分析师 Prompt
                             prompt = f"""
