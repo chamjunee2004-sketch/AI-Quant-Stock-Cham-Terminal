@@ -415,80 +415,80 @@ elif page == P2:
 # 页面 3：深度财务解析
 # ==========================================
 elif page == P3:
-st.title(_t("🗄️ 深度财务档案解密", "🗄️ Deep Financial Archives"))
-target_ticker = st.text_input(_t("输入解密目标 (如: NVDA, 1155.KL)", "Target Ticker (e.g. NVDA, 1155.KL)"), "NVDA")
-
-if st.button(_t("开始解密", "Decrypt Data")):
-    with st.spinner(_t('正在渗透数据库...', 'Extracting from database...')):
-        try:
-            t = yf.Ticker(target_ticker)
-            q_fin = t.quarterly_financials
-            if not q_fin.empty:
-                st.success(_t("数据解密成功！", "Decryption Successful!"))
-                core_metrics = ['Total Revenue', 'Gross Profit', 'Operating Income', 'Net Income']
-                available_metrics = [m for m in core_metrics if m in q_fin.index]
-                clean_df = q_fin.loc[available_metrics].iloc[:, :4]
-                clean_df.columns = [col.strftime('%Y-%m-%d') for col in clean_df.columns]
-
-
-                def format_currency(val):
-                    if pd.isna(val) or val == 0: return "N/A"
-                    if abs(val) >= 1e9:
-                        return f"${val / 1e9:.2f}B"
-                    elif abs(val) >= 1e6:
-                        return f"${val / 1e6:.2f}M"
-                    return f"${val:,.2f}"
-
-
-                st.dataframe(clean_df.apply(lambda col: col.apply(format_currency)), use_container_width=True)
-
-                if 'Total Revenue' in clean_df.index and 'Net Income' in clean_df.index:
-                    st.markdown("---")
-                    col_chart1, col_chart2 = st.columns(2)
-                    latest_q = clean_df.columns[0]
-                    rev = clean_df.loc['Total Revenue', latest_q] if 'Total Revenue' in clean_df.index else 0
-                    gp = clean_df.loc['Gross Profit', latest_q] if 'Gross Profit' in clean_df.index else 0
-                    op = clean_df.loc['Operating Income', latest_q] if 'Operating Income' in clean_df.index else 0
-                    net = clean_df.loc['Net Income', latest_q] if 'Net Income' in clean_df.index else 0
-
-                    with col_chart1:
-                        st.subheader(_t(f"💧 {latest_q} 利润瀑布流拆解", f"💧 {latest_q} Profit Waterfall"))
-                        cogs, opex, tax_etc = rev - gp, gp - op, op - net
-                        wf_x = [_t("总营收", "Revenue"), _t("营业成本", "COGS"), _t("毛利润", "Gross Profit"),
-                                _t("运营费用", "OPEX"), _t("营业利润", "Op. Income"), _t("税费等", "Taxes/Other"),
-                                _t("终局净利", "Net Income")]
-                        fig_waterfall = go.Figure(go.Waterfall(name="Profit", orientation="v",
-                                                               measure=["absolute", "relative", "total", "relative",
-                                                                        "total", "relative", "total"], x=wf_x,
-                                                               y=[rev, -cogs, gp, -opex, op, -tax_etc, net],
-                                                               connector={"line": {"color": "#1E293B"}},
-                                                               increasing={"marker": {"color": "#00D2FF"}},
-                                                               decreasing={"marker": {"color": "#FF4B4B"}},
-                                                               totals={"marker": {"color": "#34D399"}}))
-                        fig_waterfall.update_layout(template='plotly_dark', paper_bgcolor='rgba(0,0,0,0)',
-                                                    plot_bgcolor='rgba(0,0,0,0)', margin=dict(t=30, l=0, r=0, b=0))
-                        st.plotly_chart(fig_waterfall, use_container_width=True)
-
-                    with col_chart2:
-                        st.subheader(_t("📈 营收规模与净利率时序", "📈 Revenue & Margin Trend"))
-                        trend_data = clean_df.T.reset_index().sort_values('index')
-                        fig_trend = go.Figure()
-                        fig_trend.add_trace(go.Bar(x=trend_data['index'], y=trend_data['Total Revenue'],
-                                                   name=_t('总营收', 'Revenue'), marker_color='#1E40AF',
-                                                   opacity=0.7))
-                        trend_data['Net Margin'] = trend_data['Net Income'] / trend_data['Total Revenue'] * 100
-                        fig_trend.add_trace(go.Scatter(x=trend_data['index'], y=trend_data['Net Margin'],
-                                                       name=_t('净利率(%)', 'Margin(%)'), yaxis='y2',
-                                                       line=dict(color='#00D2FF', width=3, dash='dot')))
-                        fig_trend.update_layout(template='plotly_dark', paper_bgcolor='rgba(0,0,0,0)',
-                                                plot_bgcolor='rgba(0,0,0,0)', margin=dict(t=30, l=0, r=0, b=0),
-                                                yaxis2=dict(title=_t("净利率 (%)", "Margin (%)"), overlaying="y",
-                                                            side="right", showgrid=False),
-                                                legend=dict(orientation="h", yanchor="bottom", y=1.02,
-                                                            xanchor="right", x=1))
-                        st.plotly_chart(fig_trend, use_container_width=True)
-        except Exception as e:
-            st.error(_t(f"连接中断: {e}", f"Connection Error: {e}"))
+    st.title(_t("🗄️ 深度财务档案解密", "🗄️ Deep Financial Archives"))
+    target_ticker = st.text_input(_t("输入解密目标 (如: NVDA, 1155.KL)", "Target Ticker (e.g. NVDA, 1155.KL)"), "NVDA")
+    
+    if st.button(_t("开始解密", "Decrypt Data")):
+        with st.spinner(_t('正在渗透数据库...', 'Extracting from database...')):
+            try:
+                t = yf.Ticker(target_ticker)
+                q_fin = t.quarterly_financials
+                if not q_fin.empty:
+                    st.success(_t("数据解密成功！", "Decryption Successful!"))
+                    core_metrics = ['Total Revenue', 'Gross Profit', 'Operating Income', 'Net Income']
+                    available_metrics = [m for m in core_metrics if m in q_fin.index]
+                    clean_df = q_fin.loc[available_metrics].iloc[:, :4]
+                    clean_df.columns = [col.strftime('%Y-%m-%d') for col in clean_df.columns]
+    
+    
+                    def format_currency(val):
+                        if pd.isna(val) or val == 0: return "N/A"
+                        if abs(val) >= 1e9:
+                            return f"${val / 1e9:.2f}B"
+                        elif abs(val) >= 1e6:
+                            return f"${val / 1e6:.2f}M"
+                        return f"${val:,.2f}"
+    
+    
+                    st.dataframe(clean_df.apply(lambda col: col.apply(format_currency)), use_container_width=True)
+    
+                    if 'Total Revenue' in clean_df.index and 'Net Income' in clean_df.index:
+                        st.markdown("---")
+                        col_chart1, col_chart2 = st.columns(2)
+                        latest_q = clean_df.columns[0]
+                        rev = clean_df.loc['Total Revenue', latest_q] if 'Total Revenue' in clean_df.index else 0
+                        gp = clean_df.loc['Gross Profit', latest_q] if 'Gross Profit' in clean_df.index else 0
+                        op = clean_df.loc['Operating Income', latest_q] if 'Operating Income' in clean_df.index else 0
+                        net = clean_df.loc['Net Income', latest_q] if 'Net Income' in clean_df.index else 0
+    
+                        with col_chart1:
+                            st.subheader(_t(f"💧 {latest_q} 利润瀑布流拆解", f"💧 {latest_q} Profit Waterfall"))
+                            cogs, opex, tax_etc = rev - gp, gp - op, op - net
+                            wf_x = [_t("总营收", "Revenue"), _t("营业成本", "COGS"), _t("毛利润", "Gross Profit"),
+                                    _t("运营费用", "OPEX"), _t("营业利润", "Op. Income"), _t("税费等", "Taxes/Other"),
+                                    _t("终局净利", "Net Income")]
+                            fig_waterfall = go.Figure(go.Waterfall(name="Profit", orientation="v",
+                                                                   measure=["absolute", "relative", "total", "relative",
+                                                                            "total", "relative", "total"], x=wf_x,
+                                                                   y=[rev, -cogs, gp, -opex, op, -tax_etc, net],
+                                                                   connector={"line": {"color": "#1E293B"}},
+                                                                   increasing={"marker": {"color": "#00D2FF"}},
+                                                                   decreasing={"marker": {"color": "#FF4B4B"}},
+                                                                   totals={"marker": {"color": "#34D399"}}))
+                            fig_waterfall.update_layout(template='plotly_dark', paper_bgcolor='rgba(0,0,0,0)',
+                                                        plot_bgcolor='rgba(0,0,0,0)', margin=dict(t=30, l=0, r=0, b=0))
+                            st.plotly_chart(fig_waterfall, use_container_width=True)
+    
+                        with col_chart2:
+                            st.subheader(_t("📈 营收规模与净利率时序", "📈 Revenue & Margin Trend"))
+                            trend_data = clean_df.T.reset_index().sort_values('index')
+                            fig_trend = go.Figure()
+                            fig_trend.add_trace(go.Bar(x=trend_data['index'], y=trend_data['Total Revenue'],
+                                                       name=_t('总营收', 'Revenue'), marker_color='#1E40AF',
+                                                       opacity=0.7))
+                            trend_data['Net Margin'] = trend_data['Net Income'] / trend_data['Total Revenue'] * 100
+                            fig_trend.add_trace(go.Scatter(x=trend_data['index'], y=trend_data['Net Margin'],
+                                                           name=_t('净利率(%)', 'Margin(%)'), yaxis='y2',
+                                                           line=dict(color='#00D2FF', width=3, dash='dot')))
+                            fig_trend.update_layout(template='plotly_dark', paper_bgcolor='rgba(0,0,0,0)',
+                                                    plot_bgcolor='rgba(0,0,0,0)', margin=dict(t=30, l=0, r=0, b=0),
+                                                    yaxis2=dict(title=_t("净利率 (%)", "Margin (%)"), overlaying="y",
+                                                                side="right", showgrid=False),
+                                                    legend=dict(orientation="h", yanchor="bottom", y=1.02,
+                                                                xanchor="right", x=1))
+                            st.plotly_chart(fig_trend, use_container_width=True)
+            except Exception as e:
+                st.error(_t(f"连接中断: {e}", f"Connection Error: {e}"))
 
 # ==========================================
 # 页面 4：策略回测引擎
