@@ -285,22 +285,55 @@ if page == P1:
         st.subheader(_t("🗺️ 资金流向与信号热力图", "🗺️ Fund Flow & Signal Treemap"))
         
         # === 修复颜色系统：教热力图认识咱们的新文字信号 ===
+        # === 1. 极简主义颜色系统：只看最强和最弱 ===
         color_map = {
-            "💎 强烈买入": "#00D2FF",   # 赛博蓝
-            "🟢 偏多": "#34D399",      # 荧光绿
-            "⚪ 震荡观望": "#1E293B",   # 暗灰
+            "💎 强烈买入": "#064E3B",   # 极深绿 (Deep Emerald)
+            "🔴 强烈卖出": "#991B1B",   # 铁血红 (Strong Red)
+            "🟢 偏多": "#1E293B",      # 暗夜灰
+            "⚪ 震荡观望": "#1E293B",
             "⚪ 数据不足": "#1E293B",
-            "🟠 偏空": "#FBBF24",      # 警示黄
-            "🔴 强烈卖出": "#FF4B4B"   # 滴血红
+            "🟠 偏空": "#1E293B"       # 暗夜灰
         }
+
+        # === 2. 🚀 最后一枚勋章：板块轮动温度计 ===
+        st.markdown("###")
+        st.subheader(_t("🌡️ 板块实时热度监控", "🌡️ Sector Rotation Heat"))
         
+        # 统计每个板块的强烈买入比例
+        sector_stats = []
+        for sector in df[C_SEC].unique():
+            sector_df = df[df[C_SEC] == sector]
+            buy_ratio = (sector_df[C_SIG].str.contains("买入|Buy", na=False)).mean() * 100
+            sector_stats.append({"Sector": sector, "Heat": buy_ratio})
+        
+        # 按热度排序并横向显示前5名
+        heat_cols = st.columns(min(len(sector_stats), 5))
+        sorted_sectors = sorted(sector_stats, key=lambda x: x['Heat'], reverse=True)
+        
+        for i, stat in enumerate(sorted_sectors[:5]):
+            with heat_cols[i]:
+                icon = "🔥" if stat['Heat'] > 50 else "🌊" if stat['Heat'] > 20 else "❄️"
+                st.metric(f"{icon} {stat['Sector']}", f"{stat['Heat']:.1f}%")
+        
+        st.markdown("---")
+
+        # === 3. 渲染热力图 ===
         fig_tree = px.treemap(
             df, 
             path=[C_SEC, C_NAME], 
             values=C_CAP, 
             color=C_SIG,
-            color_discrete_map=color_map # 换成离散文字颜色映射！
+            color_discrete_map=color_map 
         )
+        
+        fig_tree.update_layout(
+            template='plotly_dark', 
+            paper_bgcolor='rgba(0,0,0,0)', 
+            plot_bgcolor='rgba(0,0,0,0)',
+            margin=dict(t=10, l=0, r=0, b=10), 
+            height=400 
+        )
+        st.plotly_chart(fig_tree, use_container_width=True)
         
         fig_tree.update_layout(
             template='plotly_dark', 
