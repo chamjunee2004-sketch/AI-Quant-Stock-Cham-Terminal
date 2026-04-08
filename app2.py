@@ -601,258 +601,258 @@ elif page == P4:
 # 页面 5：全球情绪雷达
 # ==========================================
 elif page == P5:
-st.title(_t("🌍 全球宏观情绪与资金联动雷达", "🌍 Global Sentiment & Cross-Asset Radar"))
-
-assets = {
-    'SPY': _t('标普500 (美股)', 'S&P 500 (Equity)'),
-    'GC=F': _t('国际黄金 (避险)', 'Gold (Safe Haven)'),
-    'BTC-USD': _t('比特币 (风险)', 'Bitcoin (Crypto)'),
-    'DX-Y.NYB': _t('美元指数', 'DXY (Dollar)')
-}
-cols = st.columns(4)
-
-hist_data = {}
-for i, (sym, name) in enumerate(assets.items()):
-    try:
-        data = yf.Ticker(sym).history(period="1mo")['Close']
-        hist_data[sym] = data
-        if len(data) >= 2:
-            curr, prev = data.iloc[-1], data.iloc[-2]
-            change = ((curr - prev) / prev) * 100
-            with cols[i]:
-                fig = px.line(x=data.index[-5:], y=data.values[-5:], template='plotly_dark')
-                fig.update_xaxes(visible=False);
-                fig.update_yaxes(visible=False)
-                fig.update_layout(margin=dict(l=0, r=0, t=0, b=0), height=80, paper_bgcolor='rgba(0,0,0,0)',
-                                  plot_bgcolor='rgba(0,0,0,0)')
-                fig.update_traces(line_color='#00D2FF' if change > 0 else '#FF4B4B')
-                st.metric(name, f"{curr:.2f}", f"{change:+.2f}%")
-                st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-    except:
-        pass
-
-st.markdown("---")
-
-df_macro = pd.DataFrame(hist_data).ffill().dropna()
-
-if not df_macro.empty and len(df_macro) >= 2:
-    col_gauge, col_corr = st.columns([1, 1.2])
-
-    with col_gauge:
-        st.subheader(_t("🌡️ 市场情绪仪表盘 (Fear & Greed)", "🌡️ Market Sentiment (Fear & Greed)"))
-        spy_return = (df_macro['SPY'].iloc[-1] / df_macro['SPY'].iloc[0] - 1) * 100 if 'SPY' in df_macro else 0
-        dx_return = (df_macro['DX-Y.NYB'].iloc[-1] / df_macro['DX-Y.NYB'].iloc[
-            0] - 1) * 100 if 'DX-Y.NYB' in df_macro else 0
-
-        simulated_score = 50 + (spy_return * 5) - (dx_return * 5)
-        gauge_score = max(0, min(100, simulated_score))
-
-        g_title = _t("极度贪婪", "Extreme Greed") if gauge_score > 75 else _t("极度恐慌",
-                                                                              "Extreme Fear") if gauge_score < 25 else _t(
-            "震荡中性", "Neutral")
-
-        fig_gauge = go.Figure(go.Indicator(
-            mode="gauge+number", value=gauge_score, domain={'x': [0, 1], 'y': [0, 1]},
-            title={'text': g_title, 'font': {'size': 18, 'color': '#E2E8F0'}},
-            gauge={
-                'axis': {'range': [None, 100], 'tickwidth': 1, 'tickcolor': "darkblue"},
-                'bar': {'color': "rgba(0,0,0,0)", 'thickness': 0},
-                'bgcolor': "rgba(0,0,0,0)", 'borderwidth': 2, 'bordercolor': "#1E293B",
-                'steps': [{'range': [0, 33], 'color': '#FF4B4B'}, {'range': [33, 66], 'color': '#1E293B'},
-                          {'range': [66, 100], 'color': '#00D2FF'}],
-                'threshold': {'line': {'color': "white", 'width': 4}, 'thickness': 0.8, 'value': gauge_score}
-            }
-        ))
-        fig_gauge.update_layout(template='plotly_dark', paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-                                height=300, margin=dict(t=50, b=0, l=0, r=0))
-        st.plotly_chart(fig_gauge, use_container_width=True)
-
-    with col_corr:
-        st.subheader(_t("🧬 跨资产资金联动矩阵 (30日)", "🧬 Cross-Asset Correlation (30D)"))
-        st.caption(_t("红色: 同涨同跌 | 蓝色: 资金跷跷板", "Red: Positive Corr | Blue: Risk Seesaw"))
-        daily_returns = df_macro.pct_change().dropna()
-        daily_returns.columns = [assets.get(col, col).split(' ')[0] for col in daily_returns.columns]
-        corr_matrix = daily_returns.corr()
-
-        fig_corr = px.imshow(corr_matrix, text_auto=".2f", color_continuous_scale='RdBu_r', zmin=-1, zmax=1,
-                             aspect="auto")
-        fig_corr.update_layout(template='plotly_dark', paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-                               height=300, margin=dict(t=10, b=0, l=0, r=0))
-        st.plotly_chart(fig_corr, use_container_width=True)
-
-# 底部：宏观异动跑马灯 (双语)
-ticker_cn = """<span style="color: #FF4B4B;">⚠️ 宏观预警：美国10年期国债收益率异动，资金避险情绪升温。</span> &nbsp;&nbsp;&nbsp;&nbsp; | &nbsp;&nbsp;&nbsp;&nbsp; <span style="color: #00D2FF;">💎 AI 前线：多头资金流入科技股，系统判定当前 Risk-On 动能充沛。</span> &nbsp;&nbsp;&nbsp;&nbsp; | &nbsp;&nbsp;&nbsp;&nbsp; <span style="color: #FBBF24;">⚡ 链上异动：比特币冷钱包大额转移，波动率预期急剧放大！</span>"""
-ticker_en = """<span style="color: #FF4B4B;">⚠️ MACRO ALERT: US 10Y Treasury yield spiking, risk-off sentiment rising.</span> &nbsp;&nbsp;&nbsp;&nbsp; | &nbsp;&nbsp;&nbsp;&nbsp; <span style="color: #00D2FF;">💎 AI RADAR: Bullish flows into Tech Core. Risk-On dynamics confirmed.</span> &nbsp;&nbsp;&nbsp;&nbsp; | &nbsp;&nbsp;&nbsp;&nbsp; <span style="color: #FBBF24;">⚡ ON-CHAIN: Whale BTC transfers detected. Expect extreme volatility!</span>"""
-
-st.markdown(f"""<div class="ticker-wrap"><div class="ticker">{ticker_cn if is_cn else ticker_en}</div></div>""",
-            unsafe_allow_html=True)
+    st.title(_t("🌍 全球宏观情绪与资金联动雷达", "🌍 Global Sentiment & Cross-Asset Radar"))
+    
+    assets = {
+        'SPY': _t('标普500 (美股)', 'S&P 500 (Equity)'),
+        'GC=F': _t('国际黄金 (避险)', 'Gold (Safe Haven)'),
+        'BTC-USD': _t('比特币 (风险)', 'Bitcoin (Crypto)'),
+        'DX-Y.NYB': _t('美元指数', 'DXY (Dollar)')
+    }
+    cols = st.columns(4)
+    
+    hist_data = {}
+    for i, (sym, name) in enumerate(assets.items()):
+        try:
+            data = yf.Ticker(sym).history(period="1mo")['Close']
+            hist_data[sym] = data
+            if len(data) >= 2:
+                curr, prev = data.iloc[-1], data.iloc[-2]
+                change = ((curr - prev) / prev) * 100
+                with cols[i]:
+                    fig = px.line(x=data.index[-5:], y=data.values[-5:], template='plotly_dark')
+                    fig.update_xaxes(visible=False);
+                    fig.update_yaxes(visible=False)
+                    fig.update_layout(margin=dict(l=0, r=0, t=0, b=0), height=80, paper_bgcolor='rgba(0,0,0,0)',
+                                      plot_bgcolor='rgba(0,0,0,0)')
+                    fig.update_traces(line_color='#00D2FF' if change > 0 else '#FF4B4B')
+                    st.metric(name, f"{curr:.2f}", f"{change:+.2f}%")
+                    st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+        except:
+            pass
+    
+    st.markdown("---")
+    
+    df_macro = pd.DataFrame(hist_data).ffill().dropna()
+    
+    if not df_macro.empty and len(df_macro) >= 2:
+        col_gauge, col_corr = st.columns([1, 1.2])
+    
+        with col_gauge:
+            st.subheader(_t("🌡️ 市场情绪仪表盘 (Fear & Greed)", "🌡️ Market Sentiment (Fear & Greed)"))
+            spy_return = (df_macro['SPY'].iloc[-1] / df_macro['SPY'].iloc[0] - 1) * 100 if 'SPY' in df_macro else 0
+            dx_return = (df_macro['DX-Y.NYB'].iloc[-1] / df_macro['DX-Y.NYB'].iloc[
+                0] - 1) * 100 if 'DX-Y.NYB' in df_macro else 0
+    
+            simulated_score = 50 + (spy_return * 5) - (dx_return * 5)
+            gauge_score = max(0, min(100, simulated_score))
+    
+            g_title = _t("极度贪婪", "Extreme Greed") if gauge_score > 75 else _t("极度恐慌",
+                                                                                  "Extreme Fear") if gauge_score < 25 else _t(
+                "震荡中性", "Neutral")
+    
+            fig_gauge = go.Figure(go.Indicator(
+                mode="gauge+number", value=gauge_score, domain={'x': [0, 1], 'y': [0, 1]},
+                title={'text': g_title, 'font': {'size': 18, 'color': '#E2E8F0'}},
+                gauge={
+                    'axis': {'range': [None, 100], 'tickwidth': 1, 'tickcolor': "darkblue"},
+                    'bar': {'color': "rgba(0,0,0,0)", 'thickness': 0},
+                    'bgcolor': "rgba(0,0,0,0)", 'borderwidth': 2, 'bordercolor': "#1E293B",
+                    'steps': [{'range': [0, 33], 'color': '#FF4B4B'}, {'range': [33, 66], 'color': '#1E293B'},
+                              {'range': [66, 100], 'color': '#00D2FF'}],
+                    'threshold': {'line': {'color': "white", 'width': 4}, 'thickness': 0.8, 'value': gauge_score}
+                }
+            ))
+            fig_gauge.update_layout(template='plotly_dark', paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+                                    height=300, margin=dict(t=50, b=0, l=0, r=0))
+            st.plotly_chart(fig_gauge, use_container_width=True)
+    
+        with col_corr:
+            st.subheader(_t("🧬 跨资产资金联动矩阵 (30日)", "🧬 Cross-Asset Correlation (30D)"))
+            st.caption(_t("红色: 同涨同跌 | 蓝色: 资金跷跷板", "Red: Positive Corr | Blue: Risk Seesaw"))
+            daily_returns = df_macro.pct_change().dropna()
+            daily_returns.columns = [assets.get(col, col).split(' ')[0] for col in daily_returns.columns]
+            corr_matrix = daily_returns.corr()
+    
+            fig_corr = px.imshow(corr_matrix, text_auto=".2f", color_continuous_scale='RdBu_r', zmin=-1, zmax=1,
+                                 aspect="auto")
+            fig_corr.update_layout(template='plotly_dark', paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+                                   height=300, margin=dict(t=10, b=0, l=0, r=0))
+            st.plotly_chart(fig_corr, use_container_width=True)
+    
+    # 底部：宏观异动跑马灯 (双语)
+    ticker_cn = """<span style="color: #FF4B4B;">⚠️ 宏观预警：美国10年期国债收益率异动，资金避险情绪升温。</span> &nbsp;&nbsp;&nbsp;&nbsp; | &nbsp;&nbsp;&nbsp;&nbsp; <span style="color: #00D2FF;">💎 AI 前线：多头资金流入科技股，系统判定当前 Risk-On 动能充沛。</span> &nbsp;&nbsp;&nbsp;&nbsp; | &nbsp;&nbsp;&nbsp;&nbsp; <span style="color: #FBBF24;">⚡ 链上异动：比特币冷钱包大额转移，波动率预期急剧放大！</span>"""
+    ticker_en = """<span style="color: #FF4B4B;">⚠️ MACRO ALERT: US 10Y Treasury yield spiking, risk-off sentiment rising.</span> &nbsp;&nbsp;&nbsp;&nbsp; | &nbsp;&nbsp;&nbsp;&nbsp; <span style="color: #00D2FF;">💎 AI RADAR: Bullish flows into Tech Core. Risk-On dynamics confirmed.</span> &nbsp;&nbsp;&nbsp;&nbsp; | &nbsp;&nbsp;&nbsp;&nbsp; <span style="color: #FBBF24;">⚡ ON-CHAIN: Whale BTC transfers detected. Expect extreme volatility!</span>"""
+    
+    st.markdown(f"""<div class="ticker-wrap"><div class="ticker">{ticker_cn if is_cn else ticker_en}</div></div>""",
+                unsafe_allow_html=True)
 
 # ==========================================
 # 页面 6：AI 智能助手 (Gemini 真身注入版)
 # ==========================================
 elif page == P6:
-st.title(_t("🧠 核心算力中枢", "🧠 AI Quant Core"))
-st.caption(_t("System Online. Manager Cham, 随时准备执行指令。", "System Online. Ready for commands, Manager Cham."))
-
-# 尝试从 Streamlit 保险柜读取 API Key
-try:
-    api_key = st.secrets["GEMINI_API_KEY"]
-    genai.configure(api_key=api_key)
-    # 使用速度最快、极其聪明的 Flash 模型
-    model = genai.GenerativeModel('gemini-1.5-flash') 
-    api_ready = True
-except:
-    api_ready = False
-    st.error(_t("⚠️ 核心未响应：请在 Streamlit Cloud 的 Secrets 中配置 `GEMINI_API_KEY` 才能唤醒我！", "⚠️ Core Offline: Please configure `GEMINI_API_KEY` in Streamlit Secrets."))
-
-if api_ready:
-    # 初始化聊天历史
-    if "chat_history" not in st.session_state:
-        st.session_state.chat_history = [
-            {"role": "assistant", "content": _t("您好，Manager Cham！我是 Gemini，我的核心已成功接入您的量化终端。想让我帮您分析哪只股票，或者查阅什么宏观数据？", "Greetings, Manager Cham! I am Gemini, successfully integrated into your terminal. What shall we analyze today?")}
-        ]
-
-    # 渲染历史对话
-    for message in st.session_state.chat_history:
-        with st.chat_message(message["role"]):
-            st.markdown(message["content"])
-
-    # 接收用户输入
-    if prompt := st.chat_input(_t("输入指令 (例如：帮我分析一下特斯拉最近的财报)...", "Enter command...")):
-        # 显示用户消息
-        st.session_state.chat_history.append({"role": "user", "content": prompt})
-        with st.chat_message("user"):
-            st.markdown(prompt)
-
-        # 调用真正的 Gemini AI 生成回复
-        with st.chat_message("assistant"):
-            with st.spinner(_t("Gemini 核心运算中...", "Gemini Core Processing...")):
-                try:
-                    # 将历史记录转换为 Gemini 认识的格式并提问
-                    history_for_gemini = [{'role': 'user' if msg['role'] == 'user' else 'model', 'parts': [msg['content']]} for msg in st.session_state.chat_history[:-1]]
-                    chat = model.start_chat(history=history_for_gemini)
-                    
-                    # 注入系统人设提示词
-                    system_prompt = f"你现在是 Manager Cham 的专属华尔街 AI 助理，正在他的专属量化终端里工作。请用专业、干练、带一点赛博黑客风格的语气回答问题。用户的请求是：{prompt}"
-                    
-                    response = chat.send_message(system_prompt)
-                    st.markdown(response.text)
-                    st.session_state.chat_history.append({"role": "assistant", "content": response.text})
-                except Exception as e:
-                    st.error(_t(f"神经网络连接异常: {e}", f"Neural Network Error: {e}"))
+    st.title(_t("🧠 核心算力中枢", "🧠 AI Quant Core"))
+    st.caption(_t("System Online. Manager Cham, 随时准备执行指令。", "System Online. Ready for commands, Manager Cham."))
+    
+    # 尝试从 Streamlit 保险柜读取 API Key
+    try:
+        api_key = st.secrets["GEMINI_API_KEY"]
+        genai.configure(api_key=api_key)
+        # 使用速度最快、极其聪明的 Flash 模型
+        model = genai.GenerativeModel('gemini-1.5-flash') 
+        api_ready = True
+    except:
+        api_ready = False
+        st.error(_t("⚠️ 核心未响应：请在 Streamlit Cloud 的 Secrets 中配置 `GEMINI_API_KEY` 才能唤醒我！", "⚠️ Core Offline: Please configure `GEMINI_API_KEY` in Streamlit Secrets."))
+    
+    if api_ready:
+        # 初始化聊天历史
+        if "chat_history" not in st.session_state:
+            st.session_state.chat_history = [
+                {"role": "assistant", "content": _t("您好，Manager Cham！我是 Gemini，我的核心已成功接入您的量化终端。想让我帮您分析哪只股票，或者查阅什么宏观数据？", "Greetings, Manager Cham! I am Gemini, successfully integrated into your terminal. What shall we analyze today?")}
+            ]
+    
+        # 渲染历史对话
+        for message in st.session_state.chat_history:
+            with st.chat_message(message["role"]):
+                st.markdown(message["content"])
+    
+        # 接收用户输入
+        if prompt := st.chat_input(_t("输入指令 (例如：帮我分析一下特斯拉最近的财报)...", "Enter command...")):
+            # 显示用户消息
+            st.session_state.chat_history.append({"role": "user", "content": prompt})
+            with st.chat_message("user"):
+                st.markdown(prompt)
+    
+            # 调用真正的 Gemini AI 生成回复
+            with st.chat_message("assistant"):
+                with st.spinner(_t("Gemini 核心运算中...", "Gemini Core Processing...")):
+                    try:
+                        # 将历史记录转换为 Gemini 认识的格式并提问
+                        history_for_gemini = [{'role': 'user' if msg['role'] == 'user' else 'model', 'parts': [msg['content']]} for msg in st.session_state.chat_history[:-1]]
+                        chat = model.start_chat(history=history_for_gemini)
+                        
+                        # 注入系统人设提示词
+                        system_prompt = f"你现在是 Manager Cham 的专属华尔街 AI 助理，正在他的专属量化终端里工作。请用专业、干练、带一点赛博黑客风格的语气回答问题。用户的请求是：{prompt}"
+                        
+                        response = chat.send_message(system_prompt)
+                        st.markdown(response.text)
+                        st.session_state.chat_history.append({"role": "assistant", "content": response.text})
+                    except Exception as e:
+                        st.error(_t(f"神经网络连接异常: {e}", f"Neural Network Error: {e}"))
 
 # ==========================================
 # 页面 7：AI 预测与止盈引擎 (带仓位管理与可视化)
 # ==========================================
 elif page == P7:
-st.title(_t("🎯 AI 预测与止盈锚定引擎", "🎯 AI Target & Profit Engine"))
-
-col_search, col_space = st.columns([1, 2])
-with col_search:
-    target_ticker = st.text_input(_t("输入预测标的 (如: AAPL, 1155.KL)", "Enter Ticker (e.g. AAPL, 1155.KL)"), "AAPL").upper()
+    st.title(_t("🎯 AI 预测与止盈锚定引擎", "🎯 AI Target & Profit Engine"))
     
-if st.button(_t("⚡ 生成 AI 交易计划", "⚡ Generate AI Trading Plan")):
-    with st.spinner(_t("🧠 AI 正在汇算全球数据与测算盈亏比...", "🧠 AI analyzing targets & risk...")):
-        try:
-            t = yf.Ticker(target_ticker)
-            info = t.info
-            hist = t.history(period="6mo") # 拉取历史数据用于画图
-            
-            current_price = info.get('currentPrice', info.get('previousClose', 0))
-            target_mean = info.get('targetMeanPrice', 0)
-            target_high = info.get('targetHighPrice', 0)
-            target_low = info.get('targetLowPrice', 0)
-            rec = info.get('recommendationKey', 'none').replace('_', ' ').title()
-            
-            if current_price > 0 and target_mean > 0 and target_low > 0:
-                st.markdown("---")
-                st.subheader(_t("📊 目标价位锚定 (华尔街共识)", "📊 Target Price Anchors (Wall St. Consensus)"))
+    col_search, col_space = st.columns([1, 2])
+    with col_search:
+        target_ticker = st.text_input(_t("输入预测标的 (如: AAPL, 1155.KL)", "Enter Ticker (e.g. AAPL, 1155.KL)"), "AAPL").upper()
+        
+    if st.button(_t("⚡ 生成 AI 交易计划", "⚡ Generate AI Trading Plan")):
+        with st.spinner(_t("🧠 AI 正在汇算全球数据与测算盈亏比...", "🧠 AI analyzing targets & risk...")):
+            try:
+                t = yf.Ticker(target_ticker)
+                info = t.info
+                hist = t.history(period="6mo") # 拉取历史数据用于画图
                 
-                c1, c2, c3, c4 = st.columns(4)
-                c1.metric(_t("当前价格", "Current Price"), f"${current_price:.2f}")
+                current_price = info.get('currentPrice', info.get('previousClose', 0))
+                target_mean = info.get('targetMeanPrice', 0)
+                target_high = info.get('targetHighPrice', 0)
+                target_low = info.get('targetLowPrice', 0)
+                rec = info.get('recommendationKey', 'none').replace('_', ' ').title()
                 
-                mean_pct = ((target_mean - current_price) / current_price) * 100
-                c2.metric(_t("合理估值 (建议止盈)", "Fair Value (Take Profit)"), f"${target_mean:.2f}", f"{mean_pct:+.2f}%")
-                
-                high_pct = ((target_high - current_price) / current_price) * 100
-                c3.metric(_t("极度乐观 (终极目标)", "Bull Case (Max Target)"), f"${target_high:.2f}", f"{high_pct:+.2f}%")
-                
-                low_pct = ((target_low - current_price) / current_price) * 100
-                c4.metric(_t("悲观支撑 (建议止损)", "Bear Case (Stop Loss)"), f"${target_low:.2f}", f"{low_pct:+.2f}%")
-
-                # ================= 核心升级 1：可视化图表 =================
-                if not hist.empty:
-                    fig_target = go.Figure()
-                    # 画出历史价格线
-                    fig_target.add_trace(go.Scatter(x=hist.index, y=hist['Close'], name=_t('历史价格', 'Price'), line=dict(color='#00D2FF', width=2)))
-                    # 画出当前价
-                    fig_target.add_hline(y=current_price, line_dash="dot", line_color="#E2E8F0", annotation_text=_t("当前价", "Current"), annotation_position="bottom right")
-                    # 画出三条目标线
-                    fig_target.add_hline(y=target_mean, line_dash="dash", line_color="#34D399", annotation_text=_t("建议止盈", "Take Profit"), annotation_position="top left")
-                    fig_target.add_hline(y=target_high, line_dash="dash", line_color="#FBBF24", annotation_text=_t("极度乐观", "Bull Target"), annotation_position="top left")
-                    fig_target.add_hline(y=target_low, line_dash="dash", line_color="#FF4B4B", annotation_text=_t("建议止损", "Stop Loss"), annotation_position="bottom left")
+                if current_price > 0 and target_mean > 0 and target_low > 0:
+                    st.markdown("---")
+                    st.subheader(_t("📊 目标价位锚定 (华尔街共识)", "📊 Target Price Anchors (Wall St. Consensus)"))
                     
-                    fig_target.update_layout(title=_t("🎯 价格运行空间映射", "🎯 Price Action & Targets Visualization"), template='plotly_dark', paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', height=400, margin=dict(t=40, b=0, l=0, r=0))
-                    st.plotly_chart(fig_target, use_container_width=True)
-
-                st.markdown("###")
-                
-                # ================= 核心升级 2：智能仓位计算器 =================
-                st.subheader(_t("⚖️ 智能仓位与风险管理", "⚖️ Position Sizing & Risk Management"))
-                
-                # 只有当前价格大于止损价格时才能做多，否则逻辑不成立
-                if current_price > target_low:
-                    risk_per_share = current_price - target_low
-                    reward_per_share = target_mean - current_price
-                    rr_ratio = reward_per_share / risk_per_share if risk_per_share > 0 else 0
+                    c1, c2, c3, c4 = st.columns(4)
+                    c1.metric(_t("当前价格", "Current Price"), f"${current_price:.2f}")
                     
-                    st.info(_t(f"**🤖 AI 综合诊断:** 华尔街综合评级为 **{rec}**。当前潜在盈亏比 (Reward/Risk) 为 **{rr_ratio:.2f} : 1**。 (注: 盈亏比大于 2.0 通常被认为是绝佳交易机会)。", 
-                               f"**🤖 AI Diagnosis:** Consensus is **{rec}**. Current Reward/Risk Ratio is **{rr_ratio:.2f} : 1**. (Note: R/R > 2.0 is generally considered excellent)."))
+                    mean_pct = ((target_mean - current_price) / current_price) * 100
+                    c2.metric(_t("合理估值 (建议止盈)", "Fair Value (Take Profit)"), f"${target_mean:.2f}", f"{mean_pct:+.2f}%")
                     
-                    col_calc1, col_calc2, col_calc3 = st.columns(3)
-                    with col_calc1:
-                        total_cap = st.number_input(_t("输入总本金 ($)", "Total Capital ($)"), min_value=100, max_value=10000000, value=10000, step=1000)
-                    with col_calc2:
-                        risk_pct = st.slider(_t("单笔愿意亏损最大比例 (%)", "Max Risk per Trade (%)"), 0.5, 5.0, 2.0, 0.5)
+                    high_pct = ((target_high - current_price) / current_price) * 100
+                    c3.metric(_t("极度乐观 (终极目标)", "Bull Case (Max Target)"), f"${target_high:.2f}", f"{high_pct:+.2f}%")
                     
-                    max_loss_dollar = total_cap * (risk_pct / 100)
-                    shares_to_buy = int(max_loss_dollar / risk_per_share)
-                    position_size = shares_to_buy * current_price
-                    position_pct = (position_size / total_cap) * 100
+                    low_pct = ((target_low - current_price) / current_price) * 100
+                    c4.metric(_t("悲观支撑 (建议止损)", "Bear Case (Stop Loss)"), f"${target_low:.2f}", f"{low_pct:+.2f}%")
+    
+                    # ================= 核心升级 1：可视化图表 =================
+                    if not hist.empty:
+                        fig_target = go.Figure()
+                        # 画出历史价格线
+                        fig_target.add_trace(go.Scatter(x=hist.index, y=hist['Close'], name=_t('历史价格', 'Price'), line=dict(color='#00D2FF', width=2)))
+                        # 画出当前价
+                        fig_target.add_hline(y=current_price, line_dash="dot", line_color="#E2E8F0", annotation_text=_t("当前价", "Current"), annotation_position="bottom right")
+                        # 画出三条目标线
+                        fig_target.add_hline(y=target_mean, line_dash="dash", line_color="#34D399", annotation_text=_t("建议止盈", "Take Profit"), annotation_position="top left")
+                        fig_target.add_hline(y=target_high, line_dash="dash", line_color="#FBBF24", annotation_text=_t("极度乐观", "Bull Target"), annotation_position="top left")
+                        fig_target.add_hline(y=target_low, line_dash="dash", line_color="#FF4B4B", annotation_text=_t("建议止损", "Stop Loss"), annotation_position="bottom left")
+                        
+                        fig_target.update_layout(title=_t("🎯 价格运行空间映射", "🎯 Price Action & Targets Visualization"), template='plotly_dark', paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', height=400, margin=dict(t=40, b=0, l=0, r=0))
+                        st.plotly_chart(fig_target, use_container_width=True)
+    
+                    st.markdown("###")
                     
-                    with col_calc3:
-                        st.markdown("####") # 占位对齐
-                        if st.button(_t("🧮 计算最优建仓量", "🧮 Calculate Ideal Position")):
-                            st.session_state.show_calc = True
+                    # ================= 核心升级 2：智能仓位计算器 =================
+                    st.subheader(_t("⚖️ 智能仓位与风险管理", "⚖️ Position Sizing & Risk Management"))
                     
-                    # 显示计算结果卡片
-                    if st.session_state.get('show_calc', False) or 'show_calc' not in st.session_state:
-                        calc_html = f"""
-                        <div style="background-color: #151A28; padding: 20px; border-radius: 8px; border: 1px solid #34D399; margin-top: 15px;">
-                            <h4 style="color: #34D399; margin-bottom: 10px;">🛡️ AI 建仓指令 (Action Plan)</h4>
-                            <ul style="color: #E2E8F0; font-size: 16px; line-height: 1.8;">
-                                <li>如果触及止损价，你最多只会亏损: <strong style="color: #FF4B4B;">${max_loss_dollar:.2f}</strong> (总本金的 {risk_pct}%)</li>
-                                <li>建议购买数量: <strong style="color: #00D2FF;">{shares_to_buy} 股</strong></li>
-                                <li>所需动用资金: <strong style="color: #FBBF24;">${position_size:.2f}</strong> (占总本金的 {position_pct:.1f}%)</li>
-                            </ul>
-                        </div>
-                        """
-                        st.markdown(calc_html, unsafe_allow_html=True)
+                    # 只有当前价格大于止损价格时才能做多，否则逻辑不成立
+                    if current_price > target_low:
+                        risk_per_share = current_price - target_low
+                        reward_per_share = target_mean - current_price
+                        rr_ratio = reward_per_share / risk_per_share if risk_per_share > 0 else 0
+                        
+                        st.info(_t(f"**🤖 AI 综合诊断:** 华尔街综合评级为 **{rec}**。当前潜在盈亏比 (Reward/Risk) 为 **{rr_ratio:.2f} : 1**。 (注: 盈亏比大于 2.0 通常被认为是绝佳交易机会)。", 
+                                   f"**🤖 AI Diagnosis:** Consensus is **{rec}**. Current Reward/Risk Ratio is **{rr_ratio:.2f} : 1**. (Note: R/R > 2.0 is generally considered excellent)."))
+                        
+                        col_calc1, col_calc2, col_calc3 = st.columns(3)
+                        with col_calc1:
+                            total_cap = st.number_input(_t("输入总本金 ($)", "Total Capital ($)"), min_value=100, max_value=10000000, value=10000, step=1000)
+                        with col_calc2:
+                            risk_pct = st.slider(_t("单笔愿意亏损最大比例 (%)", "Max Risk per Trade (%)"), 0.5, 5.0, 2.0, 0.5)
+                        
+                        max_loss_dollar = total_cap * (risk_pct / 100)
+                        shares_to_buy = int(max_loss_dollar / risk_per_share)
+                        position_size = shares_to_buy * current_price
+                        position_pct = (position_size / total_cap) * 100
+                        
+                        with col_calc3:
+                            st.markdown("####") # 占位对齐
+                            if st.button(_t("🧮 计算最优建仓量", "🧮 Calculate Ideal Position")):
+                                st.session_state.show_calc = True
+                        
+                        # 显示计算结果卡片
+                        if st.session_state.get('show_calc', False) or 'show_calc' not in st.session_state:
+                            calc_html = f"""
+                            <div style="background-color: #151A28; padding: 20px; border-radius: 8px; border: 1px solid #34D399; margin-top: 15px;">
+                                <h4 style="color: #34D399; margin-bottom: 10px;">🛡️ AI 建仓指令 (Action Plan)</h4>
+                                <ul style="color: #E2E8F0; font-size: 16px; line-height: 1.8;">
+                                    <li>如果触及止损价，你最多只会亏损: <strong style="color: #FF4B4B;">${max_loss_dollar:.2f}</strong> (总本金的 {risk_pct}%)</li>
+                                    <li>建议购买数量: <strong style="color: #00D2FF;">{shares_to_buy} 股</strong></li>
+                                    <li>所需动用资金: <strong style="color: #FBBF24;">${position_size:.2f}</strong> (占总本金的 {position_pct:.1f}%)</li>
+                                </ul>
+                            </div>
+                            """
+                            st.markdown(calc_html, unsafe_allow_html=True)
+                    else:
+                        st.warning(_t("⚠️ 当前价格已跌破华尔街悲观支撑位，盈亏比模型失效，强烈建议观望。", "⚠️ Current price is below the Stop Loss (Bear Case) target. R/R model invalid. Wait and see."))
+    
+                    st.markdown("---")
+                    st.subheader(_t("📰 核心逻辑与催化剂档案", "📰 Core Logic & Catalyst Archives"))
+                    news = t.news
+                    if news:
+                        for item in news[:4]: 
+                            title = item.get('title', 'No Title')
+                            publisher = item.get('publisher', 'Unknown')
+                            link = item.get('link', '#')
+                            st.markdown(f"""<div style="background-color: #151A28; padding: 15px; border-radius: 8px; border-left: 4px solid #00D2FF; margin-bottom: 10px;"><h5 style="margin-bottom: 5px; color: #E2E8F0;">{title}</h5><p style="font-size: 12px; color: #8B949E; margin-bottom: 0px;">Source: {publisher} | <a href="{link}" target="_blank" style="color: #34D399;">阅读原始档案 (Read Archive)</a></p></div>""", unsafe_allow_html=True)
+                    else:
+                        st.warning(_t("未找到近期的消息档案。", "No recent archives found."))
                 else:
-                    st.warning(_t("⚠️ 当前价格已跌破华尔街悲观支撑位，盈亏比模型失效，强烈建议观望。", "⚠️ Current price is below the Stop Loss (Bear Case) target. R/R model invalid. Wait and see."))
-
-                st.markdown("---")
-                st.subheader(_t("📰 核心逻辑与催化剂档案", "📰 Core Logic & Catalyst Archives"))
-                news = t.news
-                if news:
-                    for item in news[:4]: 
-                        title = item.get('title', 'No Title')
-                        publisher = item.get('publisher', 'Unknown')
-                        link = item.get('link', '#')
-                        st.markdown(f"""<div style="background-color: #151A28; padding: 15px; border-radius: 8px; border-left: 4px solid #00D2FF; margin-bottom: 10px;"><h5 style="margin-bottom: 5px; color: #E2E8F0;">{title}</h5><p style="font-size: 12px; color: #8B949E; margin-bottom: 0px;">Source: {publisher} | <a href="{link}" target="_blank" style="color: #34D399;">阅读原始档案 (Read Archive)</a></p></div>""", unsafe_allow_html=True)
-                else:
-                    st.warning(_t("未找到近期的消息档案。", "No recent archives found."))
-            else:
-                st.error(_t("数据不足：缺乏分析师目标价覆盖。", "Insufficient Data: No analyst price targets."))
-        except Exception as e:
-            st.error(_t(f"引擎提取失败: {e}", f"Engine Failed: {e}"))
+                    st.error(_t("数据不足：缺乏分析师目标价覆盖。", "Insufficient Data: No analyst price targets."))
+            except Exception as e:
+                st.error(_t(f"引擎提取失败: {e}", f"Engine Failed: {e}"))
