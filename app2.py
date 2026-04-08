@@ -219,8 +219,9 @@ P6 = _t("6. AI 智能助手", "6. AI Assistant")
 P7 = _t("7. AI 预测与止盈引擎", "7. AI Target & Catalyst Engine")
 P8 = _t("8. 定投复利引擎 (DCA)", "8. DCA Compound Engine")
 P9 = _t("9. 风险管理演习舱", "9. Risk Management Lab")
+P10 = _t("10. AI 宏观解密舱", "10. AI Macro Decryptor")
 
-page = st.sidebar.radio(_t("系统链路", "System Links"), [P1, P2, P3, P4, P5, P6, P7, P8, P9])
+page = st.sidebar.radio(_t("系统链路", "System Links"), [P1, P2, P3, P4, P5, P6, P7, P8, P9, P10])
 
 if st.sidebar.button(_t("⚡ 强制同步全球数据", "⚡ Sync Global Data"), use_container_width=True):
     with st.spinner(_t('📡 正在通过卫星链路抓取数据...', '📡 Fetching data via satellite link...')):
@@ -1020,3 +1021,79 @@ elif page == P9:
             else:
                 st.success(_t(f"🛡️ **堡垒坚固**：经过测试，你的风控模型非常稳健。只要严格执行单笔 {risk_pct}% 的止损，加上 {win_rate}% 的胜率和 {rr_ratio} 的盈亏比，时间就是你最好的朋友！", 
                               f"🛡️ **Solid Defense**: Your risk model survived all 5 universes. Stick to your {risk_pct}% stop loss, and time will be your best friend!"))
+
+# ==========================================
+# 页面 10: AI 宏观情绪与研报解密舱
+# ==========================================
+elif page == P10:
+    st.title(_t("📰 AI 宏观解密与情绪感知", "📰 AI Macro & Sentiment Decryptor"))
+    st.markdown(_t("利用 Gemini AI 瞬间读取全网英文头条，穿透语言壁垒，直接提炼华尔街核心情绪与多空驱动力。", 
+                   "Use AI to instantly read global headlines, extract Wall Street sentiment, and identify market drivers."))
+
+    # === 1. AI 算力授权 ===
+    st.sidebar.markdown("---")
+    api_key = st.sidebar.text_input("🔑 注入 Gemini API Key (激活大脑)", type="password")
+    if not api_key:
+        st.sidebar.caption("👉 需前往 Google AI Studio 免费获取 API Key 以激活此页面。")
+
+    # === 2. 战术控制台 ===
+    st.markdown("###")
+    col_n1, col_n2 = st.columns([1, 2])
+    with col_n1:
+        news_target = st.text_input(_t("🎯 输入监控标的 (如: NVDA, BTC-USD)", "🎯 Target Ticker"), "NVDA").upper()
+        
+    if st.button(_t("🧠 启动 AI 深度解密", "🧠 Ignite AI Decryption"), use_container_width=True):
+        if not api_key:
+            st.warning("⚠️ 引擎锁定：请先在左侧边栏输入 Gemini API Key！")
+        else:
+            with st.spinner(_t("📡 正在拦截华尔街实时情报...", "Intercepting Wall St data...")):
+                try:
+                    # 1. 利用 yfinance 抓取近期新闻
+                    t = yf.Ticker(news_target)
+                    news_data = t.news
+                    
+                    if not news_data:
+                        st.error(_t("找不到近期的新闻档案。", "No recent news found."))
+                    else:
+                        # 把新闻标题和来源拼接起来
+                        news_text = "\n".join([f"- {n.get('title')} ({n.get('publisher')})" for n in news_data[:6]])
+                        
+                        st.info(_t("✅ 成功拦截并解析以下头条情报：\n\n", "✅ Intercepted Headlines:\n\n") + news_text)
+                        
+                        with st.spinner(_t("🤖 AI 正在进行情感剥离与研报生成...", "AI is performing sentiment analysis...")):
+                            # 2. 唤醒 Gemini 引擎
+                            genai.configure(api_key=api_key)
+                            model = genai.GenerativeModel('gemini-1.5-flash')
+                            
+                            # 3. 注入首席分析师 Prompt
+                            prompt = f"""
+                            你现在是一位冷酷无情、只看重数据的华尔街顶级对冲基金宏观分析师。
+                            请根据以下关于标的 {news_target} 的最新英文新闻标题，用**中文**为量化交易员 Manager Cham 提供一份极简研报。
+                            请严格按照以下格式输出，不要有废话：
+                            
+                            ### 🌡️ 综合情绪指数
+                            (请明确给出结论：🔥 强烈看多 / 🟢 偏多 / ⚪ 中性 / 🔴 偏空 / 🩸 强烈看空) 
+                            并用一句话说明核心理由。
+                            
+                            ### 💡 三大核心驱动力
+                            (用 3 个简明扼要的要点，概括这些新闻对资产价格可能产生的具体影响，穿透新闻表象看本质)
+                            1. 
+                            2. 
+                            3. 
+                            
+                            ### ⚔️ 首席架构师战术建议
+                            (给量化交易员的一句话操作或风控提示)
+                            
+                            最新情报数据：
+                            {news_text}
+                            """
+                            
+                            # 生成结果
+                            response = model.generate_content(prompt)
+                            
+                            # 4. 展示终极战报
+                            st.markdown("---")
+                            st.markdown(response.text)
+                            
+                except Exception as e:
+                    st.error(f"系统崩溃或 API 额度耗尽: {e}")
