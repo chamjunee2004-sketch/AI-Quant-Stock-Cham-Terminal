@@ -217,7 +217,7 @@ P4 = _t("4. 策略回测引擎", "4. Backtest Engine")
 P5 = _t("5. 全球情绪雷达", "5. Global Sentiment Radar")
 P6 = _t("6. AI 智能助手", "6. AI Assistant")
 P7 = _t("7. AI 预测与止盈引擎", "7. AI Target & Catalyst Engine")
-P8 = _t("8. 定投复利引擎 (DCA)")
+P8 = _t("8. 定投复利引擎 (DCA)", "8. DCA Compound Engine")
 
 page = st.sidebar.radio(_t("系统链路", "System Links"), [P1, P2, P3, P4, P5, P6, P7, P8])
 
