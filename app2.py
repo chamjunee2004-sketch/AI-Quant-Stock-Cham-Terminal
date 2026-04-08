@@ -277,19 +277,22 @@ if page == P1:
                                    margin=dict(t=10, l=0, r=0, b=10), height=350)
             st.plotly_chart(fig_tree, use_container_width=True)
 
+            # === 修复 4：表格渲染逻辑与缩进修复 ===
+        if not df.empty:
+            st.markdown("---")
             st.subheader(_t("📑 深度扫描数据列表", "📑 Deep Scan Data List"))
             df[C_TREND] = [np.random.randn(10).tolist() for _ in range(len(df))]
+            
             st.dataframe(df, column_config={
-                C_ROE: st.column_config.ProgressColumn(_t("ROE效率", "ROE Eff."), format="%.2f%%", min_value=0,
-                                                       max_value=50),
-                C_SIG: st.column_config.SelectboxColumn(_t("决策", "Decision"),
-                                                        options={1: _t("💎 买入", "💎 Buy"), 0: _t("⚪ 持有", "⚪ Hold"),
-                                                                 -1: _t("🔴 卖出", "🔴 Sell")}),
+                C_ROE: st.column_config.ProgressColumn(_t("ROE效率", "ROE Eff."), format="%.2f%%", min_value=0, max_value=50),
+                # 💥 注意：这里已经删除了旧的 C_SIG 数字映射，因为新引擎直接输出真实文字！
                 C_TREND: st.column_config.LineChartColumn(_t("即时波动", "Mini Trend")),
                 C_PRICE: st.column_config.NumberColumn(_t("报价", "Price"), format="$%.2f")
             }, use_container_width=True, hide_index=True)
+            
         else:
             st.warning(_t("⚠️ 未发现符合条件的标的。", "⚠️ No matching tickers found."))
+            
     else:
         st.info(_t("💡 请在侧边栏选择频道，或输入代码。", "💡 Please select a channel or input tickers in the sidebar."))
 
