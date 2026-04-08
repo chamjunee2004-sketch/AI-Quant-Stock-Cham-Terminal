@@ -494,108 +494,108 @@ elif page == P3:
 # 页面 4：策略回测引擎
 # ==========================================
 elif page == P4:
-st.title(_t("⏱️ 量化回测与 AI 时空模拟", "⏱️ Backtest Engine & AI Simulation"))
-col_t1, col_t2, col_t3 = st.columns([2, 2, 1.5])
-with col_t1:
-    target = st.text_input(_t("🎯 输入回测标的", "🎯 Target Ticker"), "NVDA")
-with col_t2:
-    benchmark = st.text_input(_t("⚖️ 输入对比基准", "⚖️ Benchmark"), "SPY")
-with col_t3:
-    p_opt = {_t("1个月", "1mo"): "1mo", _t("3个月", "3mo"): "3mo", _t("半年", "6mo"): "6mo", _t("1年", "1y"): "1y",
-             _t("2年", "2y"): "2y", _t("5年", "5y"): "5y"}
-    period_val = p_opt[st.selectbox(_t("⏳ 回测窗口", "⏳ Timeframe"), list(p_opt.keys()), index=3)]
-
-st.markdown(_t("##### 🎛️ 战术指标与时空模拟开关", "##### 🎛️ Tactical Indicators & AI Sim Toggle"))
-t_col1, t_col2, t_col3 = st.columns(3)
-with t_col1:
-    show_bb = st.toggle(_t("🌐 布林带通道", "🌐 Bollinger Bands"), value=True)
-with t_col2:
-    show_macd = st.toggle(_t("📊 MACD 动量副图", "📊 MACD Subplot"), value=True)
-with t_col3:
-    show_mc = st.toggle(_t("🌀 30日蒙特卡洛预测", "🌀 30-Day Monte Carlo"), value=True)
-
-if st.button(_t("🚀 启动引擎", "🚀 Ignite Engine")):
-    with st.spinner(_t("极速计算中...", "Calculating...")):
-        try:
-            t_hist = yf.Ticker(target).history(period=period_val)
-            b_hist = yf.Ticker(benchmark).history(period=period_val)
-            if not t_hist.empty and not b_hist.empty:
-                df = pd.DataFrame({'Target': t_hist['Close'], 'Bench': b_hist['Close']}).dropna()
-                df['T_Ret'], df['B_Ret'] = df['Target'].pct_change(), df['Bench'].pct_change()
-
-                target_ret_total = (df['Target'].iloc[-1] / df['Target'].iloc[0] - 1) * 100
-                bench_ret_total = (df['Bench'].iloc[-1] / df['Bench'].iloc[0] - 1) * 100
-                max_dd = (((1 + df['T_Ret']).cumprod() / (1 + df['T_Ret']).cumprod().cummax()) - 1).min() * 100
-                sharpe = (df['T_Ret'].mean() / df['T_Ret'].std()) * np.sqrt(252)
-
-                cov = df[['T_Ret', 'B_Ret']].cov().iloc[0, 1]
-                beta = cov / df['B_Ret'].var() if df['B_Ret'].var() != 0 else 1
-                alpha = ((1 + target_ret_total / 100) ** (252 / len(df)) - (
-                            1 + 0.02 + beta * ((1 + bench_ret_total / 100) ** (252 / len(df)) - 1 - 0.02))) * 100
-
-                upside_prob = 0
-                if show_mc:
-                    mu, sigma = df['T_Ret'].mean(), df['T_Ret'].std()
-                    sim_paths = [[df['Target'].iloc[-1]] for _ in range(50)]
-                    for path in sim_paths:
-                        for _ in range(30): path.append(
-                            path[-1] * np.exp((mu - 0.5 * sigma ** 2) + sigma * np.random.normal()))
-                    ends = [p[-1] for p in sim_paths]
-                    upside_prob = (len([e for e in ends if e > df['Target'].iloc[-1]]) / 50) * 100
-
-                m1, m2, m3, m4, m5 = st.columns(5)
-                m1.metric(_t("累计回报", "Cum. Return"), f"{target_ret_total:.2f}%",
-                          f"{target_ret_total - bench_ret_total:+.1f}% vs " + _t("大盘", "Bench"))
-                m2.metric(_t("最大回撤", "Max Drawdown"), f"{max_dd:.2f}%", delta_color="inverse")
-                m3.metric(_t("夏普比率", "Sharpe Ratio"), f"{sharpe:.2f}")
-                m4.metric("Alpha", f"{alpha:.2f}%")
-                if show_mc:
-                    m5.metric(_t("🔮 30日上涨概率", "🔮 30D Win Prob"), f"{upside_prob:.1f}%",
-                              _t("AI 预测", "AI Forecast"))
-                else:
-                    m5.metric("Beta", f"{beta:.2f}", delta_color="off")
-
-                fig = make_subplots(rows=2 if show_macd else 1, cols=1, shared_xaxes=True, vertical_spacing=0.05,
-                                    row_heights=[0.7, 0.3] if show_macd else [1.0])
-                fig.add_trace(go.Scatter(x=df.index, y=df['Target'], name=_t('历史价格', 'Price'),
-                                         line=dict(color='#00D2FF', width=2)), row=1, col=1)
-
-                if show_bb:
-                    ma20 = df['Target'].rolling(20).mean()
-                    std20 = df['Target'].rolling(20).std()
-                    fig.add_trace(go.Scatter(x=df.index, y=ma20 + 2 * std20, line=dict(width=0), showlegend=False),
-                                  row=1, col=1)
-                    fig.add_trace(go.Scatter(x=df.index, y=ma20 - 2 * std20, line=dict(width=0), fill='tonexty',
-                                             fillcolor='rgba(255, 0, 251, 0.05)', name=_t('布林带', 'BBands')),
-                                  row=1, col=1)
-
-                if show_mc:
-                    future_dates = [df.index[-1] + timedelta(days=i) for i in range(31)]
-                    for path in sim_paths:
+    st.title(_t("⏱️ 量化回测与 AI 时空模拟", "⏱️ Backtest Engine & AI Simulation"))
+    col_t1, col_t2, col_t3 = st.columns([2, 2, 1.5])
+    with col_t1:
+        target = st.text_input(_t("🎯 输入回测标的", "🎯 Target Ticker"), "NVDA")
+    with col_t2:
+        benchmark = st.text_input(_t("⚖️ 输入对比基准", "⚖️ Benchmark"), "SPY")
+    with col_t3:
+        p_opt = {_t("1个月", "1mo"): "1mo", _t("3个月", "3mo"): "3mo", _t("半年", "6mo"): "6mo", _t("1年", "1y"): "1y",
+                 _t("2年", "2y"): "2y", _t("5年", "5y"): "5y"}
+        period_val = p_opt[st.selectbox(_t("⏳ 回测窗口", "⏳ Timeframe"), list(p_opt.keys()), index=3)]
+    
+    st.markdown(_t("##### 🎛️ 战术指标与时空模拟开关", "##### 🎛️ Tactical Indicators & AI Sim Toggle"))
+    t_col1, t_col2, t_col3 = st.columns(3)
+    with t_col1:
+        show_bb = st.toggle(_t("🌐 布林带通道", "🌐 Bollinger Bands"), value=True)
+    with t_col2:
+        show_macd = st.toggle(_t("📊 MACD 动量副图", "📊 MACD Subplot"), value=True)
+    with t_col3:
+        show_mc = st.toggle(_t("🌀 30日蒙特卡洛预测", "🌀 30-Day Monte Carlo"), value=True)
+    
+    if st.button(_t("🚀 启动引擎", "🚀 Ignite Engine")):
+        with st.spinner(_t("极速计算中...", "Calculating...")):
+            try:
+                t_hist = yf.Ticker(target).history(period=period_val)
+                b_hist = yf.Ticker(benchmark).history(period=period_val)
+                if not t_hist.empty and not b_hist.empty:
+                    df = pd.DataFrame({'Target': t_hist['Close'], 'Bench': b_hist['Close']}).dropna()
+                    df['T_Ret'], df['B_Ret'] = df['Target'].pct_change(), df['Bench'].pct_change()
+    
+                    target_ret_total = (df['Target'].iloc[-1] / df['Target'].iloc[0] - 1) * 100
+                    bench_ret_total = (df['Bench'].iloc[-1] / df['Bench'].iloc[0] - 1) * 100
+                    max_dd = (((1 + df['T_Ret']).cumprod() / (1 + df['T_Ret']).cumprod().cummax()) - 1).min() * 100
+                    sharpe = (df['T_Ret'].mean() / df['T_Ret'].std()) * np.sqrt(252)
+    
+                    cov = df[['T_Ret', 'B_Ret']].cov().iloc[0, 1]
+                    beta = cov / df['B_Ret'].var() if df['B_Ret'].var() != 0 else 1
+                    alpha = ((1 + target_ret_total / 100) ** (252 / len(df)) - (
+                                1 + 0.02 + beta * ((1 + bench_ret_total / 100) ** (252 / len(df)) - 1 - 0.02))) * 100
+    
+                    upside_prob = 0
+                    if show_mc:
+                        mu, sigma = df['T_Ret'].mean(), df['T_Ret'].std()
+                        sim_paths = [[df['Target'].iloc[-1]] for _ in range(50)]
+                        for path in sim_paths:
+                            for _ in range(30): path.append(
+                                path[-1] * np.exp((mu - 0.5 * sigma ** 2) + sigma * np.random.normal()))
+                        ends = [p[-1] for p in sim_paths]
+                        upside_prob = (len([e for e in ends if e > df['Target'].iloc[-1]]) / 50) * 100
+    
+                    m1, m2, m3, m4, m5 = st.columns(5)
+                    m1.metric(_t("累计回报", "Cum. Return"), f"{target_ret_total:.2f}%",
+                              f"{target_ret_total - bench_ret_total:+.1f}% vs " + _t("大盘", "Bench"))
+                    m2.metric(_t("最大回撤", "Max Drawdown"), f"{max_dd:.2f}%", delta_color="inverse")
+                    m3.metric(_t("夏普比率", "Sharpe Ratio"), f"{sharpe:.2f}")
+                    m4.metric("Alpha", f"{alpha:.2f}%")
+                    if show_mc:
+                        m5.metric(_t("🔮 30日上涨概率", "🔮 30D Win Prob"), f"{upside_prob:.1f}%",
+                                  _t("AI 预测", "AI Forecast"))
+                    else:
+                        m5.metric("Beta", f"{beta:.2f}", delta_color="off")
+    
+                    fig = make_subplots(rows=2 if show_macd else 1, cols=1, shared_xaxes=True, vertical_spacing=0.05,
+                                        row_heights=[0.7, 0.3] if show_macd else [1.0])
+                    fig.add_trace(go.Scatter(x=df.index, y=df['Target'], name=_t('历史价格', 'Price'),
+                                             line=dict(color='#00D2FF', width=2)), row=1, col=1)
+    
+                    if show_bb:
+                        ma20 = df['Target'].rolling(20).mean()
+                        std20 = df['Target'].rolling(20).std()
+                        fig.add_trace(go.Scatter(x=df.index, y=ma20 + 2 * std20, line=dict(width=0), showlegend=False),
+                                      row=1, col=1)
+                        fig.add_trace(go.Scatter(x=df.index, y=ma20 - 2 * std20, line=dict(width=0), fill='tonexty',
+                                                 fillcolor='rgba(255, 0, 251, 0.05)', name=_t('布林带', 'BBands')),
+                                      row=1, col=1)
+    
+                    if show_mc:
+                        future_dates = [df.index[-1] + timedelta(days=i) for i in range(31)]
+                        for path in sim_paths:
+                            fig.add_trace(
+                                go.Scatter(x=future_dates, y=path, mode='lines', line=dict(color='#00D2FF', width=0.5),
+                                           opacity=0.1, showlegend=False), row=1, col=1)
+                        avg_path = np.mean(sim_paths, axis=0)
+                        fig.add_trace(go.Scatter(x=future_dates, y=avg_path, name=_t('预期中值', 'Expected Median'),
+                                                 line=dict(color='#FBBF24', width=2, dash='dash')), row=1, col=1)
+    
+                    if show_macd:
+                        macd = df['Target'].ewm(span=12).mean() - df['Target'].ewm(span=26).mean()
+                        signal = macd.ewm(span=9).mean()
+                        diff = macd - signal
                         fig.add_trace(
-                            go.Scatter(x=future_dates, y=path, mode='lines', line=dict(color='#00D2FF', width=0.5),
-                                       opacity=0.1, showlegend=False), row=1, col=1)
-                    avg_path = np.mean(sim_paths, axis=0)
-                    fig.add_trace(go.Scatter(x=future_dates, y=avg_path, name=_t('预期中值', 'Expected Median'),
-                                             line=dict(color='#FBBF24', width=2, dash='dash')), row=1, col=1)
-
-                if show_macd:
-                    macd = df['Target'].ewm(span=12).mean() - df['Target'].ewm(span=26).mean()
-                    signal = macd.ewm(span=9).mean()
-                    diff = macd - signal
-                    fig.add_trace(
-                        go.Bar(x=df.index, y=diff, marker_color=['#34D399' if v >= 0 else '#FF4B4B' for v in diff],
-                               name='MACD'), row=2, col=1)
-                    fig.add_trace(
-                        go.Scatter(x=df.index, y=macd, line=dict(color='#00D2FF', width=1), name='MACD Line'),
-                        row=2, col=1)
-
-                fig.update_layout(template='plotly_dark', paper_bgcolor='rgba(0,0,0,0)',
-                                  plot_bgcolor='rgba(0,0,0,0)', height=650, hovermode="x unified",
-                                  margin=dict(t=20, b=20, l=0, r=0))
-                st.plotly_chart(fig, use_container_width=True)
-        except Exception as e:
-            st.error(f"Error: {e}")
+                            go.Bar(x=df.index, y=diff, marker_color=['#34D399' if v >= 0 else '#FF4B4B' for v in diff],
+                                   name='MACD'), row=2, col=1)
+                        fig.add_trace(
+                            go.Scatter(x=df.index, y=macd, line=dict(color='#00D2FF', width=1), name='MACD Line'),
+                            row=2, col=1)
+    
+                    fig.update_layout(template='plotly_dark', paper_bgcolor='rgba(0,0,0,0)',
+                                      plot_bgcolor='rgba(0,0,0,0)', height=650, hovermode="x unified",
+                                      margin=dict(t=20, b=20, l=0, r=0))
+                    st.plotly_chart(fig, use_container_width=True)
+            except Exception as e:
+                st.error(f"Error: {e}")
 
 # ==========================================
 # 页面 5：全球情绪雷达
