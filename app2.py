@@ -9,6 +9,51 @@ import time
 from datetime import timedelta
 import google.generativeai as genai
 
+def calculate_technical_signal(hist):
+    """
+    核心算力：三重技术面共振算法 (SMA20 + RSI + MACD)
+    """
+    if hist.empty or len(hist) < 30:
+        return 0.5, "⚪ 数据不足"
+    
+    close = hist['Close']
+    current_price = close.iloc[-1]
+    
+    # 1. 计算 20日均线 (短期生命线)
+    sma20 = close.rolling(window=20).mean().iloc[-1]
+    
+    # 2. 计算 14日 RSI (相对强弱指标，防追高)
+    delta = close.diff()
+    gain = delta.where(delta > 0, 0.0)
+    loss = -delta.where(delta < 0, 0.0)
+    avg_gain = gain.rolling(window=14, min_periods=1).mean().iloc[-1]
+    avg_loss = loss.rolling(window=14, min_periods=1).mean().iloc[-1]
+    rsi = 100.0 if avg_loss == 0 else 100.0 - (100.0 / (1.0 + (avg_gain / avg_loss)))
+        
+    # 3. 计算 MACD (动能加速器)
+    ema12 = close.ewm(span=12, adjust=False).mean()
+    ema26 = close.ewm(span=26, adjust=False).mean()
+    macd_line = ema12 - ema26
+    signal_line = macd_line.ewm(span=9, adjust=False).mean()
+    current_macd = macd_line.iloc[-1]
+    current_signal = signal_line.iloc[-1]
+    
+    # === 🚀 核心共振判断逻辑 ===
+    # 强烈买入：站上20日线 + 还没严重超买(RSI<70) + MACD金叉向上
+    if current_price > sma20 and rsi < 70 and current_macd > current_signal:
+        return 0.9, "💎 强烈买入"
+    # 强烈卖出：跌破20日线 + 还没严重超卖(RSI>30) + MACD死叉向下
+    elif current_price < sma20 and rsi > 30 and current_macd < current_signal:
+        return 0.1, "🔴 强烈卖出"
+    # 震荡偏多：仅仅是站上20日线
+    elif current_price > sma20:
+        return 0.7, "🟢 偏多"
+    # 震荡偏空：仅仅是跌破20日线
+    elif current_price < sma20:
+        return 0.3, "🟠 偏空"
+    else:
+        return 0.5, "⚪ 震荡观望"
+        
 # ==========================================
 # 1. 全局配置与多语言引擎 (i18n)
 # ==========================================
@@ -103,21 +148,29 @@ def _fetch_global_data_cached(symbols_list):
     if not symbols_list: return pd.DataFrame()
     data = []
     for s in symbols_list[:25]:
-        try:
-            t = yf.Ticker(s)
-            info = t.info
-            data.append({
-                'sym': s, 'name': info.get('shortName', s),
-                'price': info.get('currentPrice', info.get('previousClose', 0)),
-                'roe': round(info.get('returnOnEquity', 0) * 100, 2) if info.get('returnOnEquity') else 0,
-                'pe': round(info.get('trailingPE', 0), 2) if info.get('trailingPE') else 0,
-                'net': round(info.get('profitMargins', 0) * 100, 2) if info.get('profitMargins') else 0,
-                'rev': round(info.get('revenueGrowth', 0) * 100, 2) if info.get('revenueGrowth') else 0,
-                'sig': np.random.choice([1, 0, -1]), 'sec': info.get('sector', 'Unknown'),
-                'cap': np.random.randint(500, 10000)
-            })
-        except:
-            continue
+            try:
+                t = yf.Ticker(s)
+                info = t.info
+                
+                # 👇 1. 先在这里（拼接字典之前），把真实信号计算出来！
+                hist_data = t.history(period="3mo")
+                signal_score, signal_text = calculate_technical_signal(hist_data)
+                
+                # 👇 2. 然后把算好的数据，装进字典里
+                data.append({
+                    'sym': s, 
+                    'name': info.get('shortName', s),
+                    'price': info.get('currentPrice', info.get('previousClose', 0)),
+                    'roe': round(info.get('returnOnEquity', 0) * 100, 2) if info.get('returnOnEquity') else 0,
+                    'pe': round(info.get('trailingPE', 0), 2) if info.get('trailingPE') else 0,
+                    'net': round(info.get('profitMargins', 0) * 100, 2) if info.get('profitMargins') else 0,
+                    'rev': round(info.get('revenueGrowth', 0) * 100, 2) if info.get('revenueGrowth') else 0,
+                    'sig': signal_text,  # 👈 3. 这里把 161 行删了，换成了刚才算出来的真实信号
+                    'sec': info.get('sector', 'Unknown'),
+                    'cap': info.get('marketCap', 0) / 100000000 if info.get('marketCap') else 0
+                })
+            except:
+                continue
     return pd.DataFrame(data)
 
 
